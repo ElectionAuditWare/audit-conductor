@@ -1,0 +1,3 @@
+[submodule "CORLA18"]
+	path = CORLA18
+	url = https://github.com/ElectionAuditWare/CORLA18
