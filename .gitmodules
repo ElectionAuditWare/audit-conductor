@@ -1,3 +1,7 @@
 [submodule "CORLA18"]
 	path = CORLA18
 	url = https://github.com/ElectionAuditWare/CORLA18
+[submodule "2018-bctool"]
+	path = 2018-bctool
+	url = https://github.com/ElectionAuditWare/2018-bctool
+	branch = website
