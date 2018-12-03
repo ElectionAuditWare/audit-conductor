@@ -1,0 +1,68 @@
+/* palette comes from:
+https://civicdesign.org/wp-content/uploads/2016/02/CCD-Elections-Color-Palette-20160331.pdf */
+
+body {
+   background: #dadada;
+}
+
+.ballot.inProgress {
+   background: #f5decb;
+}
+
+/* maybe need to change this: blue meaning democrat?(?) */
+.ballot.complete {
+   background: #cfe5f4;
+}
+
+.numberLabel {
+   border-radius: 0.2em;
+   padding: 0.2em;
+}
+
+.inProgress > .numberLabel {
+   color: white;
+   background: #d87d2e;
+}
+
+.complete > .numberLabel {
+   color: white;
+   background: #3f98d3;
+}
+
+.ballot {
+}
+
+.innerForm {
+   padding: 1em;
+}
+
+.raceDiv {
+   padding: 1em;
+}
+
+.choiceCheckbox:checked + .choiceCheckboxLabel {
+   background: #cfe5f4;
+}
+
+/* todo: some common class betw this and 'ballot': */
+#seedContainer {
+   background: #f5decb;
+}
+
+.container {
+   width: 80%;
+   margin: auto;
+   padding: 1em;
+   border-radius: 1em;
+   margin-bottom: 1em;
+}
+
+/* again, dedupe (or maybe it should be a different color?): */
+#seedContainer.complete {
+   background: #cfe5f4;
+}
+
+#listOfBallotsToPull {
+
+   background: #f5decb;
+}

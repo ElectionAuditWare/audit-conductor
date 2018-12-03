@@ -1,0 +1,26 @@
+{ "election_name" : "Statewide Primary", "election_date" : "September 13, 2016", "last_updated" : "September 19, 2016 03:30 PM", "precinct_count" : "13", "precincts_reporting" : "13", "contests" : [
+  { "name" : "Representative in Congress District 1", "contest_number" : "301", "contest_party_designation" : "DEM", "total_votes" : "2419", "votes_allowed" : "1", "candidates" : [
+    { "name" : "David N. Cicilline*", "party_code" : "DEM", "votes" : "1256" }, 
+    { "name" : "Christopher F. Young", "party_code" : "DEM", "votes" : "1163" } ] },
+  { "name" : "Senator in General Assembly District 19", "contest_number" : "321", "contest_party_designation" : "DEM", "total_votes" : "1250", "votes_allowed" : "1", "candidates" : [
+    { "name" : "Ryan W. Pearson*", "party_code" : "DEM", "votes" : "1250" } ] },
+  { "name" : "Senator in General Assembly District 20", "contest_number" : "322", "contest_party_designation" : "DEM", "total_votes" : "374", "votes_allowed" : "1", "candidates" : [
+    { "name" : "Roger A. Picard*", "party_code" : "DEM", "votes" : "374" } ] },
+  { "name" : "Representative in General Assembly District 45", "contest_number" : "382", "contest_party_designation" : "DEM", "total_votes" : "351", "votes_allowed" : "1", "candidates" : [
+    { "name" : "Mia A. Ackerman*", "party_code" : "DEM", "votes" : "351" } ] },
+  { "name" : "Representative in General Assembly District 51", "contest_number" : "387", "contest_party_designation" : "DEM", "total_votes" : "19", "votes_allowed" : "1", "candidates" : [
+    { "name" : "Robert D. Phillips*", "party_code" : "DEM", "votes" : "19" } ] },
+  { "name" : "Representative in General Assembly District 52", "contest_number" : "388", "contest_party_designation" : "DEM", "total_votes" : "1477", "votes_allowed" : "1", "candidates" : [
+    { "name" : "Alex D. Marszalkowski*", "party_code" : "DEM", "votes" : "919" }, 
+    { "name" : "David M. Chenevert", "party_code" : "DEM", "votes" : "558" } ] },
+  { "name" : "Representative in General Assembly District 57", "contest_number" : "393", "contest_party_designation" : "DEM", "total_votes" : "366", "votes_allowed" : "1", "candidates" : [
+    { "name" : "James N. McLaughlin*", "party_code" : "DEM", "votes" : "366" } ] },
+  { "name" : "Town Council At-Large Cumberland", "contest_number" : "414", "contest_party_designation" : "DEM", "total_votes" : "3933", "votes_allowed" : "2", "candidates" : [
+    { "name" : "Thomas Kane*", "party_code" : "DEM", "votes" : "1544" }, 
+    { "name" : "Peter J. Bradley", "party_code" : "DEM", "votes" : "1425" }, 
+    { "name" : "Charles D. Wilk*", "party_code" : "DEM", "votes" : "964" } ] },
+  { "name" : "Town Council Cumberland District 1", "contest_number" : "415", "contest_party_designation" : "DEM", "total_votes" : "292", "votes_allowed" : "1", "candidates" : [
+    { "name" : "Wayne David Wagner", "party_code" : "DEM", "votes" : "177" }, 
+    { "name" : "John A. Doris*", "party_code" : "DEM", "votes" : "115" }
+  ]}
+]}
