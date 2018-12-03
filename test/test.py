@@ -130,8 +130,6 @@ def test_suite_calculations_are_parallelizable(
     check_valid_audit_parameters(risk_limit_a, lambda_step, o1_rate, o2_rate, u1_rate, u2_rate, stratum_sizes_a, n_ratio_a, num_winners_a)
     check_valid_audit_parameters(risk_limit_b, lambda_step, o1_rate, o2_rate, u1_rate, u2_rate, stratum_sizes_b, n_ratio_b, num_winners_b)
 
-    # print(n_ratio_a)
-
     candidates_a = { 'candidate {}'.format(i): [cvr,no_cvr] for i, (cvr,no_cvr) in enumerate(all_reported_per_candidate_a,1) }
     candidates_b = { 'candidate {}'.format(i): [cvr,no_cvr] for i, (cvr,no_cvr) in enumerate(all_reported_per_candidate_b,1) }
 
@@ -146,8 +144,34 @@ def test_suite_calculations_are_parallelizable(
     check_overvote_rates(margins=margins_a, total_votes=sum(stratum_sizes_a), o1_rate=o1_rate, o2_rate=o2_rate)
     check_overvote_rates(margins=margins_b, total_votes=sum(stratum_sizes_b), o1_rate=o1_rate, o2_rate=o2_rate)
 
+    sample_sizes_a = get_sample_sizes(candidates_a, winners_a, losers_a, stratum_sizes_a, o1_rate, o2_rate, u1_rate, u2_rate, n_ratio_a, risk_limit_a, gamma_a, lambda_step)
+    sample_sizes_b = get_sample_sizes(candidates_b, winners_b, losers_b, stratum_sizes_b, o1_rate, o2_rate, u1_rate, u2_rate, n_ratio_b, risk_limit_b, gamma_b, lambda_step)
+
 
     # assert risk_limit_a == risk_limit_b
+
+# Pulling from the jupyter notebook here but I'd like to 
+def get_sample_sizes(candidates, winners, losers, stratum_sizes, o1_rate, o2_rate, u1_rate, u2_rate, n_ratio, risk_limit, gamma, lambda_step):
+    sample_sizes = {}
+
+    for k in product(winners, losers):
+        sample_sizes[k] = estimate_n(N_w1 = candidates[k[0]][0],
+                                     N_w2 = candidates[k[0]][1],
+                                     N_l1 = candidates[k[1]][0],
+                                     N_l2 = candidates[k[1]][1],
+                                     N1 = stratum_sizes[0],
+                                     N2 = stratum_sizes[1],
+                                     o1_rate = o1_rate,
+                                     o2_rate = o2_rate,
+                                     u1_rate = u1_rate,
+                                     u2_rate = u2_rate,
+                                     n_ratio = n_ratio,
+                                     risk_limit = risk_limit,
+                                     gamma = gamma,
+                                     stepsize = lambda_step,
+                                     min_n = 5,
+                                     risk_limit_tol = 0.8)
+    return sample_sizes
 
 # test_suite_calculations_are_parallelizable(
 #         risk_limit_a=0.05,

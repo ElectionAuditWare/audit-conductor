@@ -1,4 +1,4 @@
-# audit-conductor
+# 🗳️🔬🕵️ audit-conductor 🎼🎶🎻
 
 Central repo for software to aid Rhode Island's January 2019 post-election pilot audit.
 
