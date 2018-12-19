@@ -25,3 +25,9 @@ You can run the tests by calling
 
     pytest test/test.py
 
+## Usage
+
+You can try out the prototype UIs by opening these files in your browser:
+
+ * [enter_seed](ui/sketches/enter_seed/)
+ * [enter interpretations](ui/sketches/enter_interpretations/)
