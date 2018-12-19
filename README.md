@@ -13,10 +13,15 @@ simply import them as python modules.
 
 ## Installation
 
-Todo!
+In a python3 venv:
+
+  - pip install hypothesis matplotlib numpy scipy cryptorandom pytest
+  - git submodule init
+  - git submodule update
+
+Maybe todo:
 
   - (mini)conda
-  - pip
   - Debian/Ubuntu packages
 
 ## Tests
@@ -27,7 +32,7 @@ You can run the tests by calling
 
 ## Usage
 
-You can try out the prototype UIs by opening these files in your browser:
+You can try out the prototype UIs by cloning this repository and opening these files in your browser (you may need to specify a full path name):
 
- * [enter_seed](ui/sketches/enter_seed/)
- * [enter interpretations](ui/sketches/enter_interpretations/)
+ * ui/sketches/enter_seed/index.html
+ * ui/sketches/enter_interpretations/index.html
