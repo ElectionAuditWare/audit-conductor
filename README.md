@@ -15,7 +15,7 @@ simply import them as python modules.
 
 In a python3 venv:
 
-  - pip install hypothesis matplotlib numpy scipy cryptorandom pytest
+  - pip install hypothesis matplotlib numpy scipy cryptorandom pytest flask
   - git submodule init
   - git submodule update
 
@@ -36,3 +36,9 @@ You can try out the prototype UIs by cloning this repository and opening these f
 
  * ui/sketches/enter_seed/index.html
  * ui/sketches/enter_interpretations/index.html
+
+## Other requirements
+
+  - Browser: will not work with IE 8 (IE 9 came out in 2011)
+    - document.querySelector(':checked')
+
