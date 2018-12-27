@@ -41,4 +41,6 @@ You can try out the prototype UIs by cloning this repository and opening these f
 
   - Browser: will not work with IE 8 (IE 9 came out in 2011)
     - document.querySelector(':checked')
+    - Array.filter, Array.indexOf
+    - Array.includes (maybe too new -- replace?)
 
