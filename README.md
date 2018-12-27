@@ -32,10 +32,7 @@ You can run the tests by calling
 
 ## Usage
 
-You can try out the prototype UIs by cloning this repository and opening these files in your browser (you may need to specify a full path name):
-
- * ui/sketches/enter_seed/index.html
- * ui/sketches/enter_interpretations/index.html
+    FLASK_APP=server.py flask run
 
 ## Other requirements
 
