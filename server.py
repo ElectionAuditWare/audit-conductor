@@ -85,6 +85,7 @@ def set_seed():
 # Many of these -- or at least their locations -- are temporary:
 @app.route('/jquery.js')
 def jquery():
+   # We only use this for '$.ajax'; remove?:
    return app.send_static_file('jquery-3.3.1.min.js')
 @app.route('/rla_ui.js')
 def rla_ui_js():
@@ -95,7 +96,7 @@ def cumberland_json():
    return send_from_directory('ui/sketches/enter_interpretations','cumberland.json')
 @app.route('/style.css')
 def style_css():
-   return send_from_directory('ui/sketches','style.css')
+   return send_from_directory('ui','style.css')
 @app.route('/')
 def index():
    return send_from_directory('ui','index.html')
