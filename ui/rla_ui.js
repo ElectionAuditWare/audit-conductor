@@ -291,7 +291,7 @@ function new_race_checkbox(ballot_id, race_id, race_title, race_choices) {
    ul.setAttribute('style', 'list-style-type: none');
    div.appendChild(ul);
 
-   race_choices.concat(['Write-in candidate', 'No valid selection (overvote/undervote)']).forEach(function(choice,i) {
+   race_choices.concat(['Write-in candidate', 'No selection (undervote)', 'Overvote']).forEach(function(choice,i) {
       var checkbox,label,li;
       checkbox = document.createElement('input');
       checkbox.type = 'radio'; // 'checkbox';
