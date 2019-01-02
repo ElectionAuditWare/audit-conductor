@@ -84,6 +84,7 @@ function enterContestName() {
    var saveButton = document.getElementById('contestNameSaveButton');
    var nameBox = document.getElementById('contestNameBox'); // 'Box' might sound like it's a div -- rename?
    contestNameContainer.style.display = 'block';
+   nameBox.focus();
    saveButton.onclick = function() {
       if(nameBox.value != '') {
          // TODO: Send the name to backend
@@ -100,7 +101,8 @@ function enterSeed() {
    saveButton = document.getElementById('seedSaveButton');
    seedTextBox = document.getElementById('seedTextBox');
    ballotListDiv = document.getElementById('listOfBallotsToPull');
-   
+
+   seedTextBox.focus();
 
    saveButton.onclick = function() {
       var ballotOl, seed;
