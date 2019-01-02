@@ -22,13 +22,16 @@ import election as WAVEelection
 # import BallotPolling
 # self._tolerance
 
-os.sys.path.append('audit_cvrs/audit_cvrs')
-import rlacalc
+# os.sys.path.append('audit_cvrs/audit_cvrs')
+# import rlacalc
+
+
 
 # os.sys.path.append('OpenRLA/rivest-sampler-tests')
 #from sampler import generate_outputs
 # todo: get the sampler from the source instead of OpenRLA's/audit_cvr's copy:
-# TODO: in the future, replace this with consistent_sampler:
+# In the future, replace this with consistent_sampler?:
+os.sys.path.append('rivest-sampler-tests/src/sampler')
 import sampler
 
 app = Flask(__name__, static_url_path='')
@@ -129,7 +132,7 @@ def get_ballot_polling_results():
     #   make sure we have all options since there may be ones not
     #   in the contest description (e.g. write-ins, or "no
     #   selection"):
-    all_contestant_names = list(set(contest['candidates'])).union({ i['contests'][main_contest_id] for i in all_interpretations}))
+    all_contestant_names = list(set(contest['candidates']).union({ i['contests'][main_contest_id] for i in all_interpretations}))
 
     all_contestants = { name: make_contestant(name) for name in all_contestant_names }
     reported_results = [ make_result(all_contestants, r) for r in main_reported_results ]

@@ -11,3 +11,7 @@
 [submodule "RIWAVE"]
 	path = RIWAVE
 	url = https://github.com/zperumal/RIWAVE
+[submodule "rivest-sampler-tests"]
+	path = rivest-sampler-tests
+	url = https://github.com/nealmcb/rivest-sampler-tests
+	branch = python3-port
