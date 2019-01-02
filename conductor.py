@@ -9,7 +9,7 @@
 
 
 from datetime import datetime # , isoformat
-from flask import Flask, jsonify, request, url_for, send_from_directory
+from flask import Flask, jsonify, request, url_for, send_from_directory, Response
 import os
 # https://docs.python.org/3/library/typing.html
 from typing import List, Dict
@@ -213,11 +213,26 @@ def set_seed():
       seed = j['seed']
 
       # TODO: un-hardcode these values (or set them to the 'real' hardcoded ones):
+      global ballot_ids
       [], ballot_ids = sampler.generate_outputs(seed=seed, with_replacement=False, n=6,a=0,b=10000,skip=0)
       return jsonify({'ballot_ids': ballot_ids})
    else:
       return 'Key "seed" is not present', 422
 
+
+@app.route('/get-ballot-ids')
+def get_ballot_ids():
+    return jsonify({'ballot_ids': ballot_ids})
+
+@app.route('/ballot-pull-sheet.txt')
+def get_ballot_pull_sheet():
+    s = 'Ballot Pull Sheet\n\n'
+    s += 'Ballot Order:\n'
+    s += '\n'.join([ '{}. {}'.format(i,v) for i, v in enumerate(ballot_ids, 1) ])
+    s += '\n\nSorted Order:\n'
+    s += '\n'.join([ '{}. {}'.format(i,v) for i, v in enumerate(sorted(ballot_ids), 1) ])
+    # TODO: content-type: text/plain
+    return Response(s, mimetype='text/plain')
 
 
 ### "Interpretation handlers"
@@ -232,7 +247,6 @@ def get_audit_status():
 
 
 ### Static files
-# Many of these -- or at least their locations -- are temporary:
 @app.route('/jquery.js')
 def jquery():
    # We only use this for '$.ajax'; remove?:
@@ -240,10 +254,6 @@ def jquery():
 @app.route('/rla_ui.js')
 def rla_ui_js():
    return send_from_directory('ui','rla_ui.js')
-# temporary
-@app.route('/cumberland.json')
-def cumberland_json():
-   return send_from_directory('ui/sketches/enter_interpretations','cumberland.json')
 @app.route('/style.css')
 def style_css():
    return send_from_directory('ui','style.css')

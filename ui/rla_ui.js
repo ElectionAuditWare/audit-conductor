@@ -142,6 +142,13 @@ function enterSeed() {
          // '.slice' is so we can have a non-destructive sort:
          ballotListDiv.appendChild(buildOrderedList(ballotsToInspect.slice().sort(function (a, b) {  return a - b;  }))); // numeric sort
 
+         var pullSheetText = document.createTextNode('Ballot Pull Sheet...');
+         var a = document.createElement('a');
+         a.href = '/ballot-pull-sheet.txt';
+         a.target = '_blank';
+         a.appendChild(pullSheetText);
+         ballotListDiv.appendChild(a);
+
          // Now we can start inputting interpretations:
          make_new_ballot();
 
