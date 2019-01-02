@@ -45,7 +45,7 @@ body {
 }
 
 /* todo: some common class betw this and 'ballot': */
-#seedContainer {
+#seedContainer, #contestNameContainer, #contestTypeContainer, #finalResultContainer {
    background: #f5decb;
 }
 
@@ -58,7 +58,7 @@ body {
 }
 
 /* again, dedupe (or maybe it should be a different color?): */
-#seedContainer.complete {
+#seedContainer.complete, #contestNameContainer.complete, #contestTypeContainer.complete {
    background: #cfe5f4;
 }
 

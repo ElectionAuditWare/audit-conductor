@@ -8,3 +8,6 @@
 [submodule "OpenRLA"]
 	path = OpenRLA
 	url = https://github.com/ElectionAuditWare/OpenRLA
+[submodule "RIWAVE"]
+	path = RIWAVE
+	url = https://github.com/zperumal/RIWAVE

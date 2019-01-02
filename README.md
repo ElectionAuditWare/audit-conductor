@@ -16,8 +16,7 @@ simply import them as python modules.
 In a python3 venv:
 
   - pip install hypothesis matplotlib numpy scipy cryptorandom pytest flask
-  - git submodule init
-  - git submodule update
+  - git submodule update --init --recursive
 
 Maybe todo:
 
@@ -32,7 +31,7 @@ You can run the tests by calling
 
 ## Usage
 
-    FLASK_APP=server.py flask run
+    FLASK_APP=conductor.py flask run
 
 ## Other requirements
 

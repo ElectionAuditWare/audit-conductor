@@ -6,14 +6,23 @@
       <link rel="stylesheet" href="style.css">
    </head>
    <body>
-      <div id="seedContainer" class="container">
+      <div id="contestTypeContainer" class="container">
+         Choose the contest type:<br />
+      </div>
+      <div id="contestNameContainer" class="container" style="display:none">
+         Enter a name for this contest:<br />
+         <input type="text" id="contestNameBox" />
+         <button id="contestNameSaveButton">Save</button>
+      </div>
+      <div id="seedContainer" class="container" style="display:none">
          Enter random seed:<br />
          <input type="text" id="seedTextBox" />
-         <button id="seedSaveButton">SAVE</button>
+         <button id="seedSaveButton">Save</button>
       </div>
       <div id="listOfBallotsToPull" class="container" style="display:none">
       </div>
       <div id="ballot_entries" class="outerContainer"></div>
+      <div id="finalResultContainer" class="container" style="display:none"></div>
    </body>
 </html>
 

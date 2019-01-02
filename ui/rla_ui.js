@@ -1,3 +1,5 @@
+'use strict';
+
 // TODO:
 //   - Don't use 'innerHTML'
 
@@ -7,35 +9,95 @@
 
 (function(){
 
-
-// For now we hardcode these to get the code in a clean runnable state:
-var contests = [
-   {id: 'congress_district_1',
-    title: 'Representative in Congress District 1',
-    candidates: ['David N. Cicilline', 'Christopher F. Young']
-   },
-   {id: 'assembly_19',
-    title: 'Senator in General Assembly District 19',
-    candidates: ['Alex D. Marszalkowski', 'David M. Chenevert']
-   },
-   {id: 'council_at_large',
-    title: 'Town Council At-Large Cumberland',
-    candidates: ['Thomas Kane', 'Peter J. Bradley', 'Charles D. Wilk']
-   }
-   ];
-
-
-
-
 var highestBallot = 1; // global mutable state?! TODO: remove
 var completedBallots = [];
 // Once we set this we don't remove elements from it:
 var ballotsToInspect = [];
 
+//
+
+var contestNameContainer;
+var seedContainer;
+var contestTypeContainer;
+var finalResultContainer;
+
+var contests;
+
 window.onload = function() {
-   var saveButton, seedContainer, seedTextBox, ballotListDiv;
-   saveButton = document.getElementById('seedSaveButton');
+   contestNameContainer = document.getElementById('contestNameContainer');
    seedContainer = document.getElementById('seedContainer');
+   contestTypeContainer = document.getElementById('contestTypeContainer');
+   finalResultContainer = document.getElementById('finalResultContainer');
+   $.ajax({
+      url: '/get-contests',
+      method: 'GET',
+      contentType: 'application/json',
+   }).done(function(msg) {
+      contests = msg['contests'];
+      $.ajax({
+         url: '/get-contest-types',
+         method: 'GET',
+         contentType: 'application/json',
+      }).done(function(msg) {
+         console.log(msg['types']);
+         console.log(msg);
+         chooseContestType(msg['types']);
+      }).fail(reportError);
+   }).fail(reportError);
+};
+
+function chooseContestType(types) {
+   var contestTypeSelect = document.createElement('select');
+   var saveButton = document.createElement('button');
+   ([''].concat(types)).forEach(function(contestType) {
+      // alert(contestType);
+      var opt = document.createElement('option');
+      opt.value = contestType;
+      opt.innerHTML = contestType;
+      contestTypeSelect.appendChild(opt);
+   });
+   saveButton.value = 'Save';
+   saveButton.innerHTML = 'Save';
+   contestTypeContainer.appendChild(contestTypeSelect);
+   contestTypeContainer.appendChild(saveButton);
+   saveButton.onclick = function() {
+      if(contestTypeSelect.selectedIndex > 0) {
+         // "- 1" because of the first "" option:
+         var typeChoice = types[contestTypeSelect.selectedIndex - 1];
+         if ((typeof(typeChoice) != 'undefined') && (typeChoice != "")) {
+            $.ajax({
+               url: '/set-contest-type',
+               method: 'POST',
+               contentType: 'application/json',
+               data: JSON.stringify({'type': typeChoice}),
+            }).done(function() {
+               contestTypeContainer.innerHTML = 'Contest type: <strong>' + typeChoice + '</strong>';
+               contestTypeContainer.classList.add('complete');
+               enterContestName();
+            }).fail(reportError);
+         };
+      };
+   };
+}
+
+function enterContestName() {
+   var saveButton = document.getElementById('contestNameSaveButton');
+   var nameBox = document.getElementById('contestNameBox'); // 'Box' might sound like it's a div -- rename?
+   contestNameContainer.style.display = 'block';
+   saveButton.onclick = function() {
+      if(nameBox.value != '') {
+         // TODO: Send the name to backend
+         contestNameContainer.innerHTML = 'Contest name: <strong>' + nameBox.value + '</strong>';
+         contestNameContainer.classList.add('complete');
+         enterSeed();
+      };
+   };
+}
+
+function enterSeed() {
+   var saveButton, seedTextBox, ballotListDiv;
+   seedContainer.style.display = 'block';
+   saveButton = document.getElementById('seedSaveButton');
    seedTextBox = document.getElementById('seedTextBox');
    ballotListDiv = document.getElementById('listOfBallotsToPull');
    
@@ -67,7 +129,7 @@ window.onload = function() {
 
          ballotOl = buildOrderedList(ballotsToInspect);
 
-         seedContainer.innerHTML = 'SEED: '+seed;
+         seedContainer.innerHTML = 'Seed: <strong>'+seed+'</strong>';
          seedContainer.classList.add('complete');
          ballotListDiv.style.display = 'block';
          
@@ -84,9 +146,7 @@ window.onload = function() {
 
       })
       // TODO: big red error box here:
-      .fail(function(e) {
-         alert('AJAX failure!: '+JSON.stringify(e));
-      });
+      .fail(reportError);
 
 
    };
@@ -114,9 +174,17 @@ function make_new_ballot() {
       return !(completedBallots.includes(x)); // .indexOf(x) < 0;
    });
    // console.log(ballotIdsLeft, completedBallots);
-   if (ballotsToInspect === []) {
-      // TODO:
-      alert('TODO: done!');
+   if (ballotIdsLeft.length == 0) {
+      $.ajax({
+         url: '/get-audit-status',
+         method: 'POST',
+         data: JSON.stringify({}),
+         contentType: 'application/json'
+      }).done(function(msg) {
+         console.log(msg);
+         finalResultContainer.innerHTML = 'Audit complete! Status: <strong>'+msg['status']+'</strong> ('+msg.progress+')';
+         finalResultContainer.style.display = 'block';
+      }).fail(reportError);
    } else {
       var ballot_entries = document.getElementById('ballot_entries');
       var ballot_id = ballotIdsLeft[0];
@@ -157,7 +225,7 @@ function new_inner_form(ballot_id) {
    var innerForm, saveButton;
    innerForm = document.createElement('div');
    saveButton = document.createElement('button');
-   saveButton.innerHTML = 'SAVE';
+   saveButton.innerHTML = 'Save';
 
  
    innerForm.classList.add('innerForm');
@@ -190,14 +258,15 @@ function new_inner_form(ballot_id) {
          completedBallots.push(ballot_id);
          that.parentNode.parentNode.classList.replace('inProgress','complete');
          innerForm.style.display = 'none';
+         // TODO: for the pilot we don't need to check the stopping condition
+         //   on each interpretation, since we're running for a fixed number of
+         //   ballots. In most audits, though, you'd want to check for that
+         //   here:
          make_new_ballot(); // TODO: don't do this if you're clicking to save a second time and we already have an unfinished one
          // window.event.stopPropagation();
          event.stopPropagation();
       })
-      // TODO: big red error box here:
-      .fail(function(e) {
-         alert('AJAX failure!: '+JSON.stringify(e));
-      });
+      .fail(reportError);
    }
 
    return innerForm;
@@ -213,7 +282,7 @@ function new_race_checkbox(ballot_id, race_id, race_title, race_choices) {
    ul.setAttribute('style', 'list-style-type: none');
    div.appendChild(ul);
 
-   race_choices.concat(['No selection']).forEach(function(choice,i) {
+   race_choices.concat(['Write-in candidate', 'No valid selection (overvote/undervote)']).forEach(function(choice,i) {
       var checkbox,label,li;
       checkbox = document.createElement('input');
       checkbox.type = 'radio'; // 'checkbox';
@@ -240,6 +309,11 @@ function new_race_checkbox(ballot_id, race_id, race_title, race_choices) {
 
 function contestCheckboxName(ballot_id, contest_id) {
    return ballot_id+'#'+contest_id; // +'#'+race_title;
+}
+
+// TODO: big red error box here:
+function reportError(e) {
+   alert('AJAX failure!: '+JSON.stringify(e));
 }
 
 })();
