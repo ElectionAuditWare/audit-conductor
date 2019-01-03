@@ -14,6 +14,19 @@
          <input type="text" id="contestNameBox" />
          <button id="contestNameSaveButton">Save</button>
       </div>
+      <div id="ballotManifestUploadContainer" class="container" style="display:none">
+         <p>Upload a Ballot Manifest</p>
+         <form id="uploadBallotManifestForm" method="post" enctype="multipart/form-data">
+            <fieldset>
+               <label for="file">Select a file</label>
+               <input name="file" type="file">
+            </fieldset>
+            <fieldset>
+               <button id="uploadBallotManifestButton" type="button">Upload</button>
+            </fieldset>
+         </form>
+
+      </div>
       <div id="seedContainer" class="container" style="display:none">
          Enter random seed:<br />
          <input type="text" id="seedTextBox" />

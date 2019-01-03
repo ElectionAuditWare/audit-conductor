@@ -20,14 +20,25 @@ var contestNameContainer;
 var seedContainer;
 var contestTypeContainer;
 var finalResultContainer;
+var cvrUploadContainer;
+var ballotManifestUploadContainer;
+
+var contestType;
 
 var contests;
+
+// TODO: WRITE TESTS FOR THIS FUNCTION!:
+// Particularly edge cases like first and last of a batch etc:
+var ballotNumToLocation;
 
 window.onload = function() {
    contestNameContainer = document.getElementById('contestNameContainer');
    seedContainer = document.getElementById('seedContainer');
    contestTypeContainer = document.getElementById('contestTypeContainer');
    finalResultContainer = document.getElementById('finalResultContainer');
+   cvrUploadContainer = document.getElementById('cvrUploadContainer');
+   ballotManifestUploadContainer = document.getElementById('ballotManifestUploadContainer');
+
    $.ajax({
       url: '/get-contests',
       method: 'GET',
@@ -73,6 +84,7 @@ function chooseContestType(types) {
             }).done(function() {
                contestTypeContainer.innerHTML = 'Contest type: <strong>' + typeChoice + '</strong>';
                contestTypeContainer.classList.add('complete');
+               contestType = typeChoice;
                enterContestName();
             }).fail(reportError);
          };
@@ -90,9 +102,65 @@ function enterContestName() {
          // TODO: Send the name to backend
          contestNameContainer.innerHTML = 'Contest name: <strong>' + nameBox.value + '</strong>';
          contestNameContainer.classList.add('complete');
-         enterSeed();
+         uploadBallotManifest();
       };
    };
+}
+
+function uploadBallotManifest() {
+
+   ballotManifestUploadContainer.style.display = 'block';
+
+
+   var uploadButton = document.getElementById('uploadBallotManifestButton');
+   var uploadForm = document.getElementById('uploadBallotManifestForm');
+
+   $(uploadButton).click(function() {
+      var form_data = new FormData(uploadForm);
+      $.ajax({
+         type: 'POST',
+         url: '/upload-ballot-manifest',
+         data: form_data,
+         contentType: false,
+         cache: false,
+         processData: false,
+         success: function(ballotManifest) {
+            console.log(ballotManifest);
+            ballotManifestUploadContainer.innerHTML = '(Ballot Manifest Added)';
+            ballotManifestUploadContainer.classList.add('complete');
+
+            ballotNumToLocation = function(ballotNum) {
+               var n, manifest, finished;
+               n = ballotNum;
+               manifest = ballotManifest;
+               finished = false;
+               do {
+                  // TODO: test it's not an empty list:
+                  if (n <= manifest[0]['num_sheets']) {
+                     finished = true; // needed?
+                     return 'Batch ID: '+manifest[0]['batch_id']+', imprinted ID: '+(manifest[0]['first_imprinted_id']+n);
+                  } else {
+                     n = n - manifest[0]['num_sheets'];
+                     manifest.shift();
+                  }
+               } while (finished == false);
+            };
+
+            switch (contestType) {
+               case 'ballot_polling':
+                  enterSeed();
+                  break;
+               // TODO: there are 2 different kinds of ballot comparison:
+               case 'ballot_comparison':
+                  uploadCVR();
+                  break;
+               default:
+                  asodfaslfkj();
+                  reportError('Unrecognized contest type: ' + contestType);
+            }
+         },
+      });
+   });
 }
 
 function enterSeed() {
@@ -210,7 +278,7 @@ function new_ballot(ballot_id) {
    ballot.classList.add('ballot', 'inProgress', 'container');
 
    numberLabel.classList.add('numberLabel', 'inProgress');
-   numberLabel.innerText = 'Ballot # '+highestBallot+', ID: '+ballot_id; // TODO: 'innerText' may not be cross-browser
+   numberLabel.innerText = 'Ballot # '+highestBallot+', ID: '+ballot_id+', Location: '+ballotNumToLocation(ballot_id); // TODO: 'innerText' may not be cross-browser
    highestBallot += 1;
 
    ballot.appendChild(numberLabel);

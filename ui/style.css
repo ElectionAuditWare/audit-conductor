@@ -45,8 +45,7 @@ body {
 }
 
 /* todo: some common class betw this and 'ballot': */
-#seedContainer, #contestNameContainer, #contestTypeContainer, #finalResultContainer {
-   background: #f5decb;
+#seedContainer, #contestNameContainer, #contestTypeContainer, #finalResultContainer, #csvUploadContainer {
 }
 
 .container {
@@ -55,10 +54,12 @@ body {
    padding: 1em;
    border-radius: 1em;
    margin-bottom: 1em;
+   background: #f5decb;
 }
 
 /* again, dedupe (or maybe it should be a different color?): */
-#seedContainer.complete, #contestNameContainer.complete, #contestTypeContainer.complete {
+/* #seedContainer.complete, #contestNameContainer.complete, #contestTypeContainer.complete, #csvUploadContainer.complete { */
+.container.complete {
    background: #cfe5f4;
 }
 

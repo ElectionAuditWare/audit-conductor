@@ -8,8 +8,10 @@
   # feed seed thing in -- get real ballot numbers
 
 
+import csv
 from datetime import datetime # , isoformat
 from flask import Flask, jsonify, request, url_for, send_from_directory, Response
+from werkzeug import secure_filename
 import os
 # https://docs.python.org/3/library/typing.html
 from typing import List, Dict
@@ -34,7 +36,17 @@ import election as WAVEelection
 os.sys.path.append('rivest-sampler-tests/src/sampler')
 import sampler
 
+audit_log_dir = 'audit_logs'
+if not os.path.exists(audit_log_dir):
+   os.makedirs(audit_log_dir)
+UPLOAD_FOLDER = 'scratch_files' # better name?
+if not os.path.exists(UPLOAD_FOLDER):
+   os.makedirs(UPLOAD_FOLDER)
+
+
 app = Flask(__name__, static_url_path='')
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 Interpretation = Dict[str, List[Dict[str, str]]]
 
@@ -85,9 +97,6 @@ main_reported_results = [
 
 
 
-audit_log_dir = 'audit_logs'
-if not os.path.exists(audit_log_dir):
-   os.makedirs(audit_log_dir)
 
 
 def call_f(f, *args, **kwargs):
@@ -245,6 +254,27 @@ def get_audit_status():
     print(x)
     return x
 
+
+@app.route('/upload-ballot-manifest', methods=['POST'])
+def upload_ballot_manifest():
+    # "Be conservative in what you send, be liberal in what you accept"
+    # TODO: for transparency, also return the file's hash
+    if 'file' not in request.files:
+        return 'File not uploaded', 400
+    file = request.files['file']
+    # "if user does not select file, browser also"
+    # "submit an empty part without filename"
+    if file.filename == '':
+        return 'No selected file', 400
+    if file: # and allowed_file(file.filename):
+        filename = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(file.filename))
+        file.save(filename)
+        with open(filename, newline='') as csvfile:
+            reader = csv.DictReader(csvfile)
+            rows = [ {'batch_id': r['Batch ID'], 'num_sheets': int(r['# of Sheets']), 'first_imprinted_id': int(r['First Imprinted ID'])} for r in reader ]
+            # TODO: data integrity checks!
+            # both for matching with CVR data (counts etc), and with the counts (first_printed_id adds to num_sheets etc)
+            return jsonify(rows)
 
 ### Static files
 @app.route('/jquery.js')
