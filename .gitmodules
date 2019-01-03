@@ -5,9 +5,6 @@
 	path = 2018-bctool
 	url = https://github.com/ElectionAuditWare/2018-bctool
 	branch = website
-[submodule "OpenRLA"]
-	path = OpenRLA
-	url = https://github.com/ElectionAuditWare/OpenRLA
 [submodule "RIWAVE"]
 	path = RIWAVE
 	url = https://github.com/zperumal/RIWAVE
