@@ -55,6 +55,7 @@ seed = None
 main_contest_in_progress = None
 contest_name = None
 contest_type_name = None
+total_number_of_ballots = None
 # Do we need these two?:
 get_results_f = None
 rla = None
@@ -223,7 +224,8 @@ def set_seed():
 
       # TODO: un-hardcode these values (or set them to the 'real' hardcoded ones):
       global ballot_ids
-      [], ballot_ids = sampler.generate_outputs(seed=seed, with_replacement=False, n=6,a=0,b=10000,skip=0)
+      # TODO: can someone double-check values of 'a' and 'b'
+      [], ballot_ids = sampler.generate_outputs(seed=seed, with_replacement=False, n=6,a=1,b=total_number_of_ballots,skip=0)
       return jsonify({'ballot_ids': ballot_ids})
    else:
       return 'Key "seed" is not present', 422
@@ -272,6 +274,8 @@ def upload_ballot_manifest():
         with open(filename, newline='') as csvfile:
             reader = csv.DictReader(csvfile)
             rows = [ {'batch_id': r['Batch ID'], 'num_sheets': int(r['# of Sheets']), 'first_imprinted_id': int(r['First Imprinted ID'])} for r in reader ]
+            global total_number_of_ballots
+            total_number_of_ballots = sum([ r['num_sheets'] for r in rows ])
             # TODO: data integrity checks!
             # both for matching with CVR data (counts etc), and with the counts (first_printed_id adds to num_sheets etc)
             return jsonify(rows)

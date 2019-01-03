@@ -22,6 +22,7 @@ var contestTypeContainer;
 var finalResultContainer;
 var cvrUploadContainer;
 var ballotManifestUploadContainer;
+var ballotManifest;
 
 var contestType;
 
@@ -124,15 +125,16 @@ function uploadBallotManifest() {
          contentType: false,
          cache: false,
          processData: false,
-         success: function(ballotManifest) {
-            console.log(ballotManifest);
+         success: function(ballotM) {
+            console.log(ballotM);
             ballotManifestUploadContainer.innerHTML = '(Ballot Manifest Added)';
             ballotManifestUploadContainer.classList.add('complete');
+            ballotManifest = ballotM;
 
             ballotNumToLocation = function(ballotNum) {
                var n, manifest, finished;
                n = ballotNum;
-               manifest = ballotManifest;
+               manifest = ballotManifest.slice(); // copy-by-value so we can '.shift()'
                finished = false;
                do {
                   // TODO: test it's not an empty list:
