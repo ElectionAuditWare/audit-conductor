@@ -13,7 +13,7 @@ simply import them as python modules.
 
 ## Installation
 
-In a python3 venv:
+In a python3 venv with python >= 3.4:
 
   - pip install hypothesis matplotlib numpy scipy cryptorandom pytest flask
   - git submodule update --init --recursive
