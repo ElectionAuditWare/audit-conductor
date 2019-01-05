@@ -263,6 +263,7 @@ function make_new_ballot() {
          console.log(msg);
          finalResultContainer.innerHTML = 'Audit complete! Status: <strong>'+msg['status']+'</strong> ('+msg.progress+')';
          finalResultContainer.style.display = 'block';
+         window.scrollTo(0,document.body.scrollHeight); // scroll to the bottom
       }).fail(reportError);
    } else {
       var ballot_entries = document.getElementById('ballot_entries');
