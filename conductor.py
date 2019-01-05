@@ -50,15 +50,20 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 Interpretation = Dict[str, List[Dict[str, str]]]
 
-all_interpretations = []
-seed = None
-main_contest_in_progress = None
-contest_name = None
-contest_type_name = None
-total_number_of_ballots = None
+# In the future, we can have more than one of these running concurrently:
+audit_state = {
+   'all_interpretations': [],
+   'seed': None,
+   'main_contest_in_progress': None,
+   'contest_name': None,
+   'contest_type_name': None,
+   'total_number_of_ballots': None,
+   'ballot_ids': None,
+   }
+
 # Do we need these two?:
-get_results_f = None
-rla = None
+# get_results_f = None
+# rla = None
 
 
 # bp=BallotPolling.BallotPolling()
@@ -142,14 +147,14 @@ def get_ballot_polling_results():
     #   make sure we have all options since there may be ones not
     #   in the contest description (e.g. write-ins, or "no
     #   selection"):
-    all_contestant_names = list(set(contest['candidates']).union({ i['contests'][main_contest_id] for i in all_interpretations}))
+    all_contestant_names = list(set(contest['candidates']).union({ i['contests'][main_contest_id] for i in audit_state['all_interpretations']}))
 
     all_contestants = { name: make_contestant(name) for name in all_contestant_names }
     reported_results = [ make_result(all_contestants, r) for r in main_reported_results ]
 
     bp.init(results=reported_results, ballot_count=100)
     bp.set_parameters([1]) # this is a tolerance of 1%
-    ballots = [ make_ballot(all_contestants, i) for i in all_interpretations ]
+    ballots = [ make_ballot(all_contestants, i) for i in audit_state['all_interpretations'] ]
     bp.recompute(results=reported_results, ballots=ballots)
     return(jsonify({'status': bp.get_status(), 'progress': bp.get_progress()}))
 
@@ -171,7 +176,7 @@ def set_contest_type():
     if 'type' in data:
         if data['type'] in contest_types:
             global get_results_f
-            global rla
+            # global rla
             global contest_type_name
             contest_type_name = data['type']
             t = contest_types[data['type']]
@@ -202,24 +207,27 @@ def add():
    data = request.get_json()
    app.logger.debug(data)
    if 'interpretation' in data:
-      global all_interpretations
-      all_interpretations.append(data['interpretation'])
+      global audit_state
+      audit_state['all_interpretations'].append(data['interpretation'])
       return ''
    else:
       return 'Key "interpretation" is not present in the request', 422
 
-
 @app.route('/get-all-interpretations')
-def get():
-   global all_interpretations
-   return str((all_interpretations)) # , bp._ballot_count, seed))
+def get_all_interpretations():
+   # global audit_state
+   return str((audit_state['all_interpretations'])) # , bp._ballot_count, seed))
+
+@app.route('/get-audit-state')
+def get_audit_state():
+   return jsonify(audit_state)
 
 @app.route('/set-seed', methods=['POST'])
 def set_seed():
    j = request.get_json()
    if 'seed' in j:
       global seed
-      global main_contest_in_progress
+      # global main_contest_in_progress
       seed = j['seed']
 
       # TODO: un-hardcode these values (or set them to the 'real' hardcoded ones):
