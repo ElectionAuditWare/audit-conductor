@@ -87,44 +87,39 @@ function chooseContestType() {
       method: 'GET',
       contentType: 'application/json',
    }).done(function(msg) {
-      chooseContestType2(msg['types']);
-   }).fail(reportError);
-}
-
-function chooseContestType2(types) {
-
-   var contestTypeSelect = document.createElement('select');
-   var saveButton = document.createElement('button');
-   ([''].concat(types)).forEach(function(contestType) {
-      // alert(contestType);
-      var opt = document.createElement('option');
-      opt.value = contestType;
-      opt.innerHTML = contestType;
-      contestTypeSelect.appendChild(opt);
-   });
-   saveButton.value = 'Save';
-   saveButton.innerHTML = 'Save';
-   contestTypeContainer.appendChild(contestTypeSelect);
-   contestTypeContainer.appendChild(saveButton);
-   saveButton.onclick = function() {
-      if(contestTypeSelect.selectedIndex > 0) {
-         // "- 1" because of the first "" option:
-         var typeChoice = types[contestTypeSelect.selectedIndex - 1];
-         if ((typeof(typeChoice) != 'undefined') && (typeChoice != "")) {
-            $.ajax({
-               url: '/set-contest-type',
-               method: 'POST',
-               contentType: 'application/json',
-               data: JSON.stringify({'type': typeChoice}),
-            }).done(function() {
-               contestTypeContainer.innerHTML = 'Contest type: <strong>' + typeChoice + '</strong>';
-               contestTypeContainer.classList.add('complete');
-               // uiState['contest_type_name'] = typeChoice;
-               getConductorState(mainLoop); // this'll now have 'contest_type_name'
-            }).fail(reportError);
+      var types = msg['types'];
+      var contestTypeSelect = document.createElement('select');
+      var saveButton = document.createElement('button');
+      ([''].concat(types)).forEach(function(contestType) {
+         var opt = document.createElement('option');
+         opt.value = contestType;
+         opt.innerHTML = contestType;
+         contestTypeSelect.appendChild(opt);
+      });
+      saveButton.value = 'Save';
+      saveButton.innerHTML = 'Save';
+      contestTypeContainer.appendChild(contestTypeSelect);
+      contestTypeContainer.appendChild(saveButton);
+      saveButton.onclick = function() {
+         if(contestTypeSelect.selectedIndex > 0) {
+            // "- 1" because of the first "" option:
+            var typeChoice = types[contestTypeSelect.selectedIndex - 1];
+            if ((typeof(typeChoice) != 'undefined') && (typeChoice != "")) {
+               $.ajax({
+                  url: '/set-contest-type',
+                  method: 'POST',
+                  contentType: 'application/json',
+                  data: JSON.stringify({'type': typeChoice}),
+               }).done(function() {
+                  contestTypeContainer.innerHTML = 'Contest type: <strong>' + typeChoice + '</strong>';
+                  contestTypeContainer.classList.add('complete');
+                  // uiState['contest_type_name'] = typeChoice;
+                  getConductorState(mainLoop); // this'll now have 'contest_type_name'
+               }).fail(reportError);
+            };
          };
       };
-   };
+      }).fail(reportError);
 }
 
 
