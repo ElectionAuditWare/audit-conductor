@@ -2,6 +2,7 @@
 
 // TODO:
 //   - Don't use 'innerHTML'
+//   - Use 'parentNode' less
 
 // Contest IDs cannot contain "strange" characters
 //   (Either define this more carefully or just limit to "a-z0-9_-")
@@ -9,8 +10,11 @@
 
 (function(){
 
-var highestBallot = 1; // global mutable state?! TODO: remove
 var conductorState = {};
+// The UI may be out of sync with the server. For example, you could
+//   hard-refresh your browser window, and then no frontend representations
+//   of the data that's still on the backend would (yet) exist. 'uiState' is
+//   mainly a way of tracking where the UI is:
 var uiState = {
    'have_displayed_pull_list': false,
 
@@ -34,6 +38,14 @@ var finalResultContainer;
 var cvrUploadContainer;
 var ballotManifestUploadContainer;
 var ballotListDiv; // rename for consistency?
+
+// Couple helpers to make the code shorter:
+function newElem(elemType) {
+   return document.createElement(elemType);
+}
+function getById(nodeId) {
+   return document.getElementById(nodeId);
+};
 
 window.onload = function() {
    contestNameContainer = document.getElementById('contestNameContainer');
@@ -268,7 +280,6 @@ function enterSeed() {
          contentType: 'application/json'
       })
       .done(function(msg){
-         ballotsToInspect = msg['ballot_ids'];
          getConductorState(function() {
             displaySeed();
             mainLoop();
@@ -281,7 +292,8 @@ function enterSeed() {
 function displaySeed() {
 // TODO: this can be split out into a couple of functions:
 
-         var ballotOl;
+         var ballotOl, ballotsToInspect;
+         ballotsToInspect = conductorState['ballot_ids'];
 
          ballotOl = buildOrderedList(ballotsToInspect);
 
@@ -324,7 +336,7 @@ function buildOrderedList(elems) {
 // TODO: better name because there's also 'newBallot':
 
 function makeNewBallot() {
-   var ballotIdsLeft = ballotsToInspect.filter(function(x) {
+   var ballotIdsLeft = conductorState['ballot_ids'].filter(function(x) {
       return !(completedBallots.includes(x)); // .indexOf(x) < 0;
    });
    // console.log(ballotIdsLeft, completedBallots);
@@ -360,12 +372,23 @@ function newBallot(ballot_id) {
    highestBallot += 1;
 
    numberLabel.onclick = function(event) {
+      // This work in all IEs we need it to?:
+      var resultDiv = ballot.querySelector('.resultDiv');
+      if (typeof(resultDiv) !== 'undefined' && resultDiv !== null) {
+         if (resultDiv.style.display === 'none') {
+            resultDiv.style.display = 'block';
+         } else {
+            resultDiv.style.display = 'none';
+         }
+      }
+/*
       if (innerForm.style.display === 'none') {
          innerForm.style.display = 'block';
          // TODO: 'includes' may be too new for some browsers:
       } else if (completedBallots.includes(ballot_id)) {
          innerForm.style.display = 'none';
       }
+*/
       // window.event.stopPropagation();
       event.stopPropagation();
    };
@@ -400,9 +423,28 @@ function newInnerForm(ballot_id) {
          var x = document.querySelector('input[name="'+contestCheckboxName(ballot_id, contest.id)+'"]:checked').value;
          dat['contests'][contest.id] = x;
       });
+      innerForm.parentNode.appendChild(newInterpretationConfirmation(dat));
+      innerForm.parentNode.removeChild(innerForm); // This has to be after the other '.parentNode's or they'll be null
+   };
+   return innerForm;
+};
+
+function newInterpretationConfirmation(interpretationJSON) {
+   var dat = interpretationJSON;
+   var confirmationDiv = newElem('div');
+   var confirmButton = newElem('button');
+   var rejectButton = newElem('button');
+   confirmButton.value = 'Confirm';
+   confirmButton.innerHTML = 'Confirm';
+   rejectButton.value = 'Reject';
+   rejectButton.innerHTML = 'Reject';
+   confirmationDiv.classList.add('confirmationDiv');
+   // confirmationDiv.innerHTML = JSON.stringify(interpretationJSON);
+
       // console.log(dat);
       // TODO: to be extra safe here, distinguish between first click (create) and
       //   others (update) when calling jquery.ajax (maybe {update:true}?)
+   confirmButton.onclick = function(event) {
       $.ajax({
          url: '/add-interpretation',
          data: JSON.stringify({'interpretation': dat}),
@@ -411,22 +453,42 @@ function newInnerForm(ballot_id) {
          contentType: 'application/json'
       })
       .done(function(msg){
-         completedBallots.push(ballot_id);
-         that.parentNode.parentNode.classList.replace('inProgress','complete');
-         innerForm.style.display = 'none';
+         completedBallots.push(interpretationJSON['ballot_id']);
+         confirmationDiv.parentNode.classList.replace('inProgress','complete');
+         confirmationDiv.style.display = 'none';
+         confirmButton.style.display = 'none';
+         rejectButton.style.display = 'none';
+         confirmationDiv.classList.add('resultDiv');
          // TODO: for the pilot we don't need to check the stopping condition
          //   on each interpretation, since we're running for a fixed number of
          //   ballots. In most audits, though, you'd want to check for that
          //   here:
          makeNewBallot(); // TODO: don't do this if you're clicking to save a second time and we already have an unfinished one
          // window.event.stopPropagation();
-         event.stopPropagation();
-      })
-      .fail(reportError);
+         event.stopPropagation(); // Maybe unnecessary
+      }).fail(reportError);
+   };
+   // Note we don't re-fill the existing radio buttons.
+   //   That's intentional, although it could change based on the spec:
+   rejectButton.onclick = function() {
+      confirmationDiv.parentNode.appendChild(newInnerForm(interpretationJSON['ballot_id']));
+      confirmationDiv.parentNode.removeChild(confirmationDiv);
+   };
+   var resultList = [];
+/*
+   for (var contestId in interpretationJSON['contests']) {
+      resultList.push(contestId + ': ' + interpretationJSON['contests'][contestId]);
    }
+*/
+   conductorState['all_contests'].forEach(function(contest) {
+      resultList.push(contest.title + ': ' + interpretationJSON['contests'][contest.id]);
+   });
+   confirmationDiv.appendChild(buildOrderedList(resultList));
+   confirmationDiv.appendChild(rejectButton);
+   confirmationDiv.appendChild(confirmButton);
+   return confirmationDiv;
+}
 
-   return innerForm;
-};
 
 function newRaceCheckbox(ballot_id, race_id, race_title, race_choices) {
    var div, ul;
