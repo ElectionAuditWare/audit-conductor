@@ -10,23 +10,25 @@
 (function(){
 
 var highestBallot = 1; // global mutable state?! TODO: remove
+var conductorState = {};
+var uiState = {
+     // 'contest_type': null,
+     'have_displayed_pull_list': false,
+   };
+
+// var ballotManifest;
+
 var completedBallots = [];
 // Once we set this we don't remove elements from it:
 var ballotsToInspect = [];
 
-//
-
+// container divs:
 var contestNameContainer;
 var seedContainer;
 var contestTypeContainer;
 var finalResultContainer;
 var cvrUploadContainer;
 var ballotManifestUploadContainer;
-var ballotManifest;
-
-var contestType;
-
-var contests;
 
 // TODO: WRITE TESTS FOR THIS FUNCTION!:
 // Particularly edge cases like first and last of a batch etc:
@@ -40,25 +42,57 @@ window.onload = function() {
    cvrUploadContainer = document.getElementById('cvrUploadContainer');
    ballotManifestUploadContainer = document.getElementById('ballotManifestUploadContainer');
 
+   getConductorState(mainLoop);
+/*
    $.ajax({
       url: '/get-contests',
       method: 'GET',
       contentType: 'application/json',
    }).done(function(msg) {
-      contests = msg['contests'];
-      $.ajax({
-         url: '/get-contest-types',
-         method: 'GET',
-         contentType: 'application/json',
-      }).done(function(msg) {
-         console.log(msg['types']);
-         console.log(msg);
-         chooseContestType(msg['types']);
-      }).fail(reportError);
-   }).fail(reportError);
+      all_contests = msg['contests'];
+*/
+   // }).fail(reportError);
 };
 
-function chooseContestType(types) {
+// The backend (conductor.py) is the source of truth so we fetch it directly
+//   when we need it:
+function getConductorState(andThen) {
+   $.ajax({
+      url: '/get-audit-state',
+      method: 'POST',
+      contentType: 'application/json',
+   }).done(function(msg) {
+      console.log('conductor state', msg);
+      conductorState = msg;
+      andThen();
+   }).fail(reportError);
+}
+
+function mainLoop() {
+   if (conductorState['contest_type_name'] === null) {
+      console.log(conductorState['contest_type_name']);
+      chooseContestType();
+   } else if (conductorState['contest_name'] === null) {
+      enterContestName();
+   } else if (conductorState['ballot_manifest'] === null) {
+      uploadBallotManifest(); // TODO: when?
+   } else if (conductorState['seed'] === null) {
+      enterSeed();
+   }
+}
+
+function chooseContestType() {
+   $.ajax({
+      url: '/get-contest-types',
+      method: 'GET',
+      contentType: 'application/json',
+   }).done(function(msg) {
+      chooseContestType2(msg['types']);
+   }).fail(reportError);
+}
+
+function chooseContestType2(types) {
+
    var contestTypeSelect = document.createElement('select');
    var saveButton = document.createElement('button');
    ([''].concat(types)).forEach(function(contestType) {
@@ -85,13 +119,15 @@ function chooseContestType(types) {
             }).done(function() {
                contestTypeContainer.innerHTML = 'Contest type: <strong>' + typeChoice + '</strong>';
                contestTypeContainer.classList.add('complete');
-               contestType = typeChoice;
-               enterContestName();
+               // uiState['contest_type_name'] = typeChoice;
+               getConductorState(mainLoop); // this'll now have 'contest_type_name'
             }).fail(reportError);
          };
       };
    };
 }
+
+
 
 function enterContestName() {
    var saveButton = document.getElementById('contestNameSaveButton');
@@ -100,10 +136,19 @@ function enterContestName() {
    nameBox.focus();
    saveButton.onclick = function() {
       if(nameBox.value != '') {
-         // TODO: Send the name to backend
-         contestNameContainer.innerHTML = 'Contest name: <strong>' + nameBox.value + '</strong>';
-         contestNameContainer.classList.add('complete');
-         uploadBallotManifest();
+         $.ajax({
+            url: '/set-contest-name',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({'contest_name': nameBox.value}),
+         }).done(function() {
+            // uiState['contest_name'] = nameBox.value;
+            getConductorState(function(){
+               contestNameContainer.innerHTML = 'Contest name: <strong>' + conductorState['contest_name'] + '</strong>';
+               contestNameContainer.classList.add('complete');
+               mainLoop();
+            });
+         }).fail(reportError);
       };
    };
 }
@@ -125,41 +170,35 @@ function uploadBallotManifest() {
          contentType: false,
          cache: false,
          processData: false,
-         success: function(ballotM) {
-            console.log(ballotM);
+         success: function() { // ballotM) {
+            // console.log(ballotM);
             ballotManifestUploadContainer.innerHTML = '(Ballot Manifest Added)';
             ballotManifestUploadContainer.classList.add('complete');
-            ballotManifest = ballotM;
+            // ballotManifest = ballotM;
 
-            ballotNumToLocation = function(ballotNum) {
-               var n, manifest, finished;
-               n = ballotNum;
-               manifest = ballotManifest.slice(); // copy-by-value so we can '.shift()'
-               finished = false;
-               do {
-                  // TODO: test it's not an empty list:
-                  if (n <= manifest[0]['num_sheets']) {
-                     finished = true; // needed?
-                     return 'Batch ID: '+manifest[0]['batch_id']+', imprinted ID: '+(manifest[0]['first_imprinted_id']+n);
-                  } else {
-                     n = n - manifest[0]['num_sheets'];
-                     manifest.shift();
-                  }
-               } while (finished == false);
-            };
-
-            switch (contestType) {
-               case 'ballot_polling':
-                  enterSeed();
-                  break;
-               // TODO: there are 2 different kinds of ballot comparison:
-               case 'ballot_comparison':
-                  uploadCVR();
-                  break;
-               default:
-                  asodfaslfkj();
-                  reportError('Unrecognized contest type: ' + contestType);
-            }
+            getConductorState(function() {
+               // TODO: make this a toplevel (and well-tested) function which
+               //   takes the manifest as an arg:
+               ballotNumToLocation = function(ballotNum) {
+                  var n, manifest, finished;
+                  n = ballotNum;
+                  manifest = conductorState['ballot_manifest'].slice(); // copy-by-value so we can '.shift()'
+                  finished = false;
+                  //console.log(manifest);
+                  //console.log(ballotManifest);
+                  do {
+                     // TODO: test it's not an empty list:
+                     if (n <= manifest[0]['num_sheets']) {
+                        finished = true; // needed?
+                        return 'Batch ID: '+manifest[0]['batch_id']+', imprinted ID: '+(manifest[0]['first_imprinted_id']+n);
+                     } else {
+                        n = n - manifest[0]['num_sheets'];
+                        manifest.shift();
+                     }
+                  } while (finished == false);
+               };
+               mainLoop();
+            });
          },
       });
    });
@@ -176,12 +215,8 @@ function enterSeed() {
 
    saveButton.onclick = function() {
       var ballotOl, seed;
-      // ballotNumbers = []; // '<ol><li>23456</li></ol>';
       // TODO: careful with malicious/surprising input!:
       seed = seedTextBox.value;
-
-      // console.log(seedTextBox);
-      // console.log(seedTextBox.value);
 
       $.ajax({
          url: '/set-seed',
@@ -190,13 +225,6 @@ function enterSeed() {
          contentType: 'application/json'
       })
       .done(function(msg){
-// This was for the demo:
-/*
-         for (i=0;i<10;i++) {
-            ballotNumbers.push( Math.round(Math.random() * 1e6 ))
-         };
-*/
-
          ballotsToInspect = msg['ballot_ids'];
 
          ballotOl = buildOrderedList(ballotsToInspect);
@@ -206,7 +234,7 @@ function enterSeed() {
          ballotListDiv.style.display = 'block';
          
          ballotListDiv.appendChild(document.createTextNode('Ballot order:'));
-         ballotListDiv.appendChild(ballotOl); // innerHTML = ballotList;
+         ballotListDiv.appendChild(ballotOl);
          
          ballotListDiv.appendChild(document.createTextNode('Sorted order:'));
          // '.slice' is so we can have a non-destructive sort:
@@ -224,10 +252,7 @@ function enterSeed() {
 
 
       })
-      // TODO: big red error box here:
       .fail(reportError);
-
-
    };
 }
 
@@ -310,7 +335,7 @@ function new_inner_form(ballot_id) {
  
    innerForm.classList.add('innerForm');
 
-   contests.forEach(function(contest) {
+   conductorState['all_contests'].forEach(function(contest) {
       var contestBox = new_race_checkbox(ballot_id, contest.id, contest.title, contest.candidates);
       innerForm.appendChild(contestBox);
    });
@@ -320,7 +345,7 @@ function new_inner_form(ballot_id) {
    saveButton.onclick = function(event) {
       var that = this;
       var dat = {ballot_id: ballot_id, contests: {}};
-      contests.forEach(function(contest) {
+      conductorState['all_contests'].forEach(function(contest) {
          var x = document.querySelector('input[name="'+contestCheckboxName(ballot_id, contest.id)+'"]:checked').value;
          dat['contests'][contest.id] = x;
       });

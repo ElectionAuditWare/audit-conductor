@@ -8,6 +8,7 @@
   # feed seed thing in -- get real ballot numbers
 
 
+import copy
 import csv
 from datetime import datetime # , isoformat
 from flask import Flask, jsonify, request, url_for, send_from_directory, Response
@@ -51,54 +52,51 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 Interpretation = Dict[str, List[Dict[str, str]]]
 
 # In the future, we can have more than one of these running concurrently:
-audit_state = {
+default_audit_state = {
    'all_interpretations': [],
    'seed': None,
    'main_contest_in_progress': None,
    'contest_name': None,
    'contest_type_name': None,
+   'ballot_manifest': None,
+   # these next two can be gotten from 'ballot_manifest':
    'total_number_of_ballots': None,
    'ballot_ids': None,
+
+   # Hardcoding/configuration, which will come from various CSVs in the future:
+   # ("Main" means the one contest we're non-opportunistically auditing):
+   # TODO: write-in etc should go here (so we have them in the ballot polling)
+   'all_contests': [
+      {'id': 'congress_district_1',
+       'title': 'Representative in Congress District 1',
+       'candidates': ['David N. Cicilline', 'Christopher F. Young']
+      },
+      {'id': 'assembly_19',
+       'title': 'Senator in General Assembly District 19',
+       'candidates': ['Alex D. Marszalkowski', 'David M. Chenevert']
+      },
+      {'id': 'council_at_large',
+       'title': 'Town Council At-Large Cumberland',
+       'candidates': ['Thomas Kane', 'Peter J. Bradley', 'Charles D. Wilk']
+      },
+      ],
+   'main_contest_id': 'congress_district_1',
+   #ballots_cast_for_main_apparent_winner = 600
+   # total_main_ballots_cast = 1000
+   'main_reported_results': [
+      {'candidate': 'David N. Cicilline',
+       'percentage': 0.9, # 0.6,
+       'votes': 90,
+      },
+      {'candidate': 'Christopher F. Young',
+       'percentage': 0.1, # 0.4,
+       'votes': 10,
+      },
+      ],
    }
 
-# Do we need these two?:
-# get_results_f = None
-# rla = None
+audit_state = copy.deepcopy(default_audit_state)
 
-
-# bp=BallotPolling.BallotPolling()
-
-
-# More hardcoding, which will come from the CVRs later:
-# ("Main" means the one contest we're non-opportunistically auditing):
-# TODO: write-in etc should go here (so we have them in the ballot polling)
-contests = [
-   {'id': 'congress_district_1',
-    'title': 'Representative in Congress District 1',
-    'candidates': ['David N. Cicilline', 'Christopher F. Young']
-   },
-   {'id': 'assembly_19',
-    'title': 'Senator in General Assembly District 19',
-    'candidates': ['Alex D. Marszalkowski', 'David M. Chenevert']
-   },
-   {'id': 'council_at_large',
-    'title': 'Town Council At-Large Cumberland',
-    'candidates': ['Thomas Kane', 'Peter J. Bradley', 'Charles D. Wilk']
-   },
-   ]
-main_contest_id = 'congress_district_1'
-ballots_cast_for_main_apparent_winner = 600
-total_main_ballots_cast = 1000
-main_reported_results = [
-   {'candidate': 'David N. Cicilline',
-    'percentage': 0.9, # 0.6,
-    'votes': 90,
-   },
-   {'candidate': 'Christopher F. Young',
-    'percentage': 0.1, # 0.4,
-    'votes': 10,
-   }
-   ]
 
 
 
@@ -133,7 +131,7 @@ def make_ballot(all_contestants, interpretation):
     #ballot.get_physical_ballot_num(i+1):
     # interp {'ballot_id': 9104, 'contests': {'congress_district_1': 'David N. Cicilline', 'assembly_19': 'David M. Chenevert', 'council_at_large': 'Peter J. Bradley'}}
     # ballot.set_reported_value(yes) # for ballot comparison
-    ballot.set_actual_value(all_contestants[interpretation['contests'][main_contest_id]])
+    ballot.set_actual_value(all_contestants[interpretation['contests'][audit_state['main_contest_id']]])
     return ballot
 
 # TODO: type:
@@ -141,16 +139,16 @@ def get_ballot_polling_results():
     bp = WAVEaudit.BallotPolling()
     # contest = contests[main_contest_id]
     # TODO: 'contests' should probably be a dict instead:
-    contest = list(filter(lambda c: c['id'] == main_contest_id, contests))[0]
+    contest = list(filter(lambda c: c['id'] == audit_state['main_contest_id'], audit_state['all_contests']))[0]
 
     # TODO: clean up how we do this. This is just a quick way to
     #   make sure we have all options since there may be ones not
     #   in the contest description (e.g. write-ins, or "no
     #   selection"):
-    all_contestant_names = list(set(contest['candidates']).union({ i['contests'][main_contest_id] for i in audit_state['all_interpretations']}))
+    all_contestant_names = list(set(contest['candidates']).union({ i['contests'][audit_state['main_contest_id']] for i in audit_state['all_interpretations']}))
 
     all_contestants = { name: make_contestant(name) for name in all_contestant_names }
-    reported_results = [ make_result(all_contestants, r) for r in main_reported_results ]
+    reported_results = [ make_result(all_contestants, r) for r in audit_state['main_reported_results'] ]
 
     bp.init(results=reported_results, ballot_count=100)
     bp.set_parameters([1]) # this is a tolerance of 1%
@@ -175,13 +173,9 @@ def set_contest_type():
     data = request.get_json()
     if 'type' in data:
         if data['type'] in contest_types:
-            global get_results_f
-            # global rla
-            global contest_type_name
-            contest_type_name = data['type']
+            global audit_state
+            audit_state['contest_type_name'] = data['type']
             t = contest_types[data['type']]
-            get_results_f = t['get_results']
-            #rla = t['init']()
             return ''
         else:
             return "That contest type isn't a choice", 422
@@ -190,17 +184,17 @@ def set_contest_type():
 
 @app.route('/set-contest-name', methods=['POST'])
 def set_contest_name():
-    data = request.json()
-    if 'name' in data:
-        global contest_name
-        contest_name = data['name']
+    data = request.get_json()
+    if 'contest_name' in data:
+        global audit_state
+        audit_state['contest_name'] = data['contest_name']
         return ''
     else:
-        return 'Key "name" not present in request', 422
+        return 'Key "contest_name" not present in request', 422
 
 @app.route('/get-contests')
 def route_get_contests():
-    return jsonify({'contests': contests})
+    return jsonify({'contests': audit_state['all_contests']})
 
 @app.route('/add-interpretation', methods=['POST'])
 def add():
@@ -218,7 +212,7 @@ def get_all_interpretations():
    # global audit_state
    return str((audit_state['all_interpretations'])) # , bp._ballot_count, seed))
 
-@app.route('/get-audit-state')
+@app.route('/get-audit-state', methods=['GET', 'POST'])
 def get_audit_state():
    return jsonify(audit_state)
 
@@ -226,30 +220,31 @@ def get_audit_state():
 def set_seed():
    j = request.get_json()
    if 'seed' in j:
-      global seed
+      global audit_state
+      # global seed
       # global main_contest_in_progress
-      seed = j['seed']
+      audit_state['seed'] = j['seed']
+
 
       # TODO: un-hardcode these values (or set them to the 'real' hardcoded ones):
-      global ballot_ids
       # TODO: can someone double-check values of 'a' and 'b'
-      [], ballot_ids = sampler.generate_outputs(seed=seed, with_replacement=False, n=6,a=1,b=total_number_of_ballots,skip=0)
-      return jsonify({'ballot_ids': ballot_ids})
+      [], audit_state['ballot_ids'] = sampler.generate_outputs(seed=audit_state['seed'], with_replacement=False, n=6,a=1,b=audit_state['total_number_of_ballots'],skip=0)
+      return jsonify({'ballot_ids': audit_state['ballot_ids']}) # TODO: do we want to return anything here?
    else:
       return 'Key "seed" is not present', 422
 
 
 @app.route('/get-ballot-ids')
 def get_ballot_ids():
-    return jsonify({'ballot_ids': ballot_ids})
+    return jsonify({'ballot_ids': audit_state['ballot_ids']})
 
 @app.route('/ballot-pull-sheet.txt')
 def get_ballot_pull_sheet():
     s = 'Ballot Pull Sheet\n\n'
     s += 'Ballot Order:\n'
-    s += '\n'.join([ '{}. {}'.format(i,v) for i, v in enumerate(ballot_ids, 1) ])
+    s += '\n'.join([ '{}. {}'.format(i,v) for i, v in enumerate(audit_state['ballot_ids'], 1) ])
     s += '\n\nSorted Order:\n'
-    s += '\n'.join([ '{}. {}'.format(i,v) for i, v in enumerate(sorted(ballot_ids), 1) ])
+    s += '\n'.join([ '{}. {}'.format(i,v) for i, v in enumerate(sorted(audit_state['ballot_ids']), 1) ])
     # TODO: content-type: text/plain
     return Response(s, mimetype='text/plain')
 
@@ -258,9 +253,9 @@ def get_ballot_pull_sheet():
 # (Not git-adding yet)
 @app.route('/get-audit-status', methods=['POST'])
 def get_audit_status():
-    print(contest_type_name)
-    print(contest_types[contest_type_name])
-    x = contest_types[contest_type_name]['get_results']()
+    # print(contest_type_name)
+    # print(contest_types[contest_type_name])
+    x = contest_types[audit_state['contest_type_name']]['get_results']()
     print(x)
     return x
 
@@ -282,11 +277,19 @@ def upload_ballot_manifest():
         with open(filename, newline='') as csvfile:
             reader = csv.DictReader(csvfile)
             rows = [ {'batch_id': r['Batch ID'], 'num_sheets': int(r['# of Sheets']), 'first_imprinted_id': int(r['First Imprinted ID'])} for r in reader ]
-            global total_number_of_ballots
-            total_number_of_ballots = sum([ r['num_sheets'] for r in rows ])
+            global audit_state
+            audit_state['total_number_of_ballots'] = sum([ r['num_sheets'] for r in rows ])
+            audit_state['ballot_manifest'] = rows
             # TODO: data integrity checks!
             # both for matching with CVR data (counts etc), and with the counts (first_printed_id adds to num_sheets etc)
-            return jsonify(rows)
+            return jsonify(rows) # todo: don't return this?
+
+@app.route('/reset-audit-state', methods=['POST'])
+def reset_audit_state():
+    global audit_state
+    audit_state = copy.deepcopy(default_audit_state)
+    return ''
+
 
 ### Static files
 @app.route('/jquery.js')
