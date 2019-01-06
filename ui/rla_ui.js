@@ -12,11 +12,15 @@
 var highestBallot = 1; // global mutable state?! TODO: remove
 var conductorState = {};
 var uiState = {
-     // 'contest_type': null,
-     'have_displayed_pull_list': false,
-   };
+   'have_displayed_pull_list': false,
 
-// var ballotManifest;
+   'got_contest_type': false,
+   'got_contest_name': false,
+   'got_ballot_manifest': false,
+   'got_seed': false,
+
+   'interpretation_to_confirm': null,
+   };
 
 var completedBallots = [];
 // Once we set this we don't remove elements from it:
@@ -29,6 +33,7 @@ var contestTypeContainer;
 var finalResultContainer;
 var cvrUploadContainer;
 var ballotManifestUploadContainer;
+var ballotListDiv; // rename for consistency?
 
 window.onload = function() {
    contestNameContainer = document.getElementById('contestNameContainer');
@@ -37,6 +42,7 @@ window.onload = function() {
    finalResultContainer = document.getElementById('finalResultContainer');
    cvrUploadContainer = document.getElementById('cvrUploadContainer');
    ballotManifestUploadContainer = document.getElementById('ballotManifestUploadContainer');
+   ballotListDiv = document.getElementById('listOfBallotsToPull');
 
    getConductorState(mainLoop);
 /*
@@ -65,15 +71,36 @@ function getConductorState(andThen) {
 }
 
 function mainLoop() {
-   if (conductorState['contest_type_name'] === null) {
-      console.log(conductorState['contest_type_name']);
-      chooseContestType();
-   } else if (conductorState['contest_name'] === null) {
-      enterContestName();
-   } else if (conductorState['ballot_manifest'] === null) {
-      uploadBallotManifest(); // TODO: when?
-   } else if (conductorState['seed'] === null) {
-      enterSeed();
+   if ( ! uiState['got_contest_type']) {
+      var contestType = conductorState['contest_type_name'];
+      if (contestType === null) {
+         chooseContestType();
+      } else {
+         displayContestType(); // contestType);
+         mainLoop();
+      }
+   } else if ( ! uiState['got_contest_name']) {
+      var contestName = conductorState['contest_name'];
+      if (contestName === null) {
+         enterContestName();
+      } else {
+         displayContestName(); // contestName);
+         mainLoop();
+      }
+   } else if ( ! uiState['got_ballot_manifest'] ) {
+      if (conductorState['ballot_manifest'] === null) {
+         uploadBallotManifest(); // TODO: when?
+      } else {
+         displayBallotManifest();
+         mainLoop();
+      }
+   } else if ( ! uiState['got_seed'] ) {
+      if (conductorState['seed'] === null) {
+         enterSeed();
+      } else {
+         displaySeed();
+         mainLoop();
+      }
    } else { // TODO
      // Now we can start inputting interpretations:
      makeNewBallot();
@@ -110,10 +137,11 @@ function chooseContestType() {
                   contentType: 'application/json',
                   data: JSON.stringify({'type': typeChoice}),
                }).done(function() {
-                  contestTypeContainer.innerHTML = 'Contest type: <strong>' + typeChoice + '</strong>';
-                  contestTypeContainer.classList.add('complete');
-                  // uiState['contest_type_name'] = typeChoice;
-                  getConductorState(mainLoop); // this'll now have 'contest_type_name'
+                  // displayContestType(typeChoice);
+                  getConductorState(function() {
+                     displayContestType();
+                     mainLoop(); // this'll now have 'contest_type_name'
+                  });
                }).fail(reportError);
             };
          };
@@ -121,6 +149,14 @@ function chooseContestType() {
       }).fail(reportError);
 }
 
+
+function displayContestType() { // typeChoice) {
+   var typeChoice = conductorState['contest_type_name'];
+   contestTypeContainer.innerHTML = 'Contest type: <strong>' + typeChoice + '</strong>';
+   contestTypeContainer.classList.add('complete');
+
+   uiState['got_contest_type'] = true;
+}
 
 
 function enterContestName() {
@@ -138,13 +174,19 @@ function enterContestName() {
          }).done(function() {
             // uiState['contest_name'] = nameBox.value;
             getConductorState(function(){
-               contestNameContainer.innerHTML = 'Contest name: <strong>' + conductorState['contest_name'] + '</strong>';
-               contestNameContainer.classList.add('complete');
+               displayContestName(); // conductorState['contest_name']);
                mainLoop();
             });
          }).fail(reportError);
       };
    };
+}
+
+function displayContestName() {
+   contestNameContainer.style.display = 'block';
+   contestNameContainer.innerHTML = 'Contest name: <strong>' + conductorState['contest_name'] + '</strong>';
+   contestNameContainer.classList.add('complete');
+   uiState['got_contest_name'] = true;
 }
 
 function uploadBallotManifest() {
@@ -166,16 +208,23 @@ function uploadBallotManifest() {
          processData: false,
          success: function() { // ballotM) {
             // console.log(ballotM);
-            ballotManifestUploadContainer.innerHTML = '(Ballot Manifest Added)';
-            ballotManifestUploadContainer.classList.add('complete');
             // ballotManifest = ballotM;
 
             getConductorState(function() {
+               displayBallotManifest();
                mainLoop();
             });
          },
       });
    });
+}
+
+function displayBallotManifest () {
+   ballotManifestUploadContainer.style.display = 'block';
+   ballotManifestUploadContainer.innerHTML = '(Ballot Manifest Added)';
+   ballotManifestUploadContainer.classList.add('complete');
+
+   uiState['got_ballot_manifest'] = true;
 }
 
 // TODO: WRITE TESTS FOR THIS FUNCTION!:
@@ -200,16 +249,15 @@ function ballotNumToLocation(fullManifest, ballotNum) {
 
 
 function enterSeed() {
-   var saveButton, seedTextBox, ballotListDiv;
+   var saveButton, seedTextBox;
    seedContainer.style.display = 'block';
    saveButton = document.getElementById('seedSaveButton');
    seedTextBox = document.getElementById('seedTextBox');
-   ballotListDiv = document.getElementById('listOfBallotsToPull');
 
    seedTextBox.focus();
 
    saveButton.onclick = function() {
-      var ballotOl, seed;
+      var seed;
       // TODO: careful with malicious/surprising input!:
       seed = seedTextBox.value;
 
@@ -221,10 +269,23 @@ function enterSeed() {
       })
       .done(function(msg){
          ballotsToInspect = msg['ballot_ids'];
+         getConductorState(function() {
+            displaySeed();
+            mainLoop();
+         });
+      })
+      .fail(reportError);
+   };
+}
+
+function displaySeed() {
+// TODO: this can be split out into a couple of functions:
+
+         var ballotOl;
 
          ballotOl = buildOrderedList(ballotsToInspect);
 
-         seedContainer.innerHTML = 'Seed: <strong>'+seed+'</strong>';
+         seedContainer.innerHTML = 'Seed: <strong>'+conductorState['seed']+'</strong>';
          seedContainer.classList.add('complete');
          ballotListDiv.style.display = 'block';
          
@@ -242,12 +303,7 @@ function enterSeed() {
          a.appendChild(pullSheetText);
          ballotListDiv.appendChild(a);
 
-         getConductorState(mainLoop);
-
-
-      })
-      .fail(reportError);
-   };
+         uiState['got_seed'] = true;
 }
 
 function buildOrderedList(elems) {
