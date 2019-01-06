@@ -30,10 +30,6 @@ var finalResultContainer;
 var cvrUploadContainer;
 var ballotManifestUploadContainer;
 
-// TODO: WRITE TESTS FOR THIS FUNCTION!:
-// Particularly edge cases like first and last of a batch etc:
-var ballotNumToLocation;
-
 window.onload = function() {
    contestNameContainer = document.getElementById('contestNameContainer');
    seedContainer = document.getElementById('seedContainer');
@@ -175,32 +171,33 @@ function uploadBallotManifest() {
             // ballotManifest = ballotM;
 
             getConductorState(function() {
-               // TODO: make this a toplevel (and well-tested) function which
-               //   takes the manifest as an arg:
-               ballotNumToLocation = function(ballotNum) {
-                  var n, manifest, finished;
-                  n = ballotNum;
-                  manifest = conductorState['ballot_manifest'].slice(); // copy-by-value so we can '.shift()'
-                  finished = false;
-                  //console.log(manifest);
-                  //console.log(ballotManifest);
-                  do {
-                     // TODO: test it's not an empty list:
-                     if (n <= manifest[0]['num_sheets']) {
-                        finished = true; // needed?
-                        return 'Batch ID: '+manifest[0]['batch_id']+', imprinted ID: '+(manifest[0]['first_imprinted_id']+n);
-                     } else {
-                        n = n - manifest[0]['num_sheets'];
-                        manifest.shift();
-                     }
-                  } while (finished == false);
-               };
                mainLoop();
             });
          },
       });
    });
 }
+
+// TODO: WRITE TESTS FOR THIS FUNCTION!:
+// Particularly edge cases like first and last of a batch etc:
+function ballotNumToLocation(fullManifest, ballotNum) {
+   var n, manifest, finished;
+   n = ballotNum;
+   manifest = fullManifest.slice(); // copy-by-value so we can '.shift()'
+   finished = false;
+   do {
+      // TODO: test it's not an empty list:
+      if (n <= manifest[0]['num_sheets']) {
+         finished = true; // needed?
+         return 'Batch ID: '+manifest[0]['batch_id']+', imprinted ID: '+(manifest[0]['first_imprinted_id']+n);
+      } else {
+         n = n - manifest[0]['num_sheets'];
+         manifest.shift();
+      }
+   } while (finished == false);
+}
+
+
 
 function enterSeed() {
    var saveButton, seedTextBox, ballotListDiv;
@@ -283,7 +280,7 @@ function makeNewBallot() {
          contentType: 'application/json'
       }).done(function(msg) {
          // console.log(msg);
-         finalResultContainer.innerHTML = 'Audit complete! Status: <strong>'+msg['status']+'</strong> ('+msg.progress+')';
+         finalResultContainer.innerHTML = 'Audit complete! Status: <strong>'+msg['status']+'</strong> ('+msg.progress+')<br /><br /><a href="/reset">Reset and audit another contest</a>';
          finalResultContainer.style.display = 'block';
          window.scrollTo(0,document.body.scrollHeight); // scroll to the bottom
       }).fail(reportError);
@@ -303,7 +300,7 @@ function newBallot(ballot_id) {
    ballot.classList.add('ballot', 'inProgress', 'container');
 
    numberLabel.classList.add('numberLabel', 'inProgress');
-   numberLabel.innerText = 'Ballot # '+highestBallot+', ID: '+ballot_id+', Location: '+ballotNumToLocation(ballot_id); // TODO: 'innerText' may not be cross-browser
+   numberLabel.innerText = 'Ballot # '+highestBallot+', ID: '+ballot_id+', Location: '+ballotNumToLocation(conductorState['ballot_manifest'], ballot_id); // TODO: 'innerText' may not be cross-browser
    highestBallot += 1;
 
    numberLabel.onclick = function(event) {
