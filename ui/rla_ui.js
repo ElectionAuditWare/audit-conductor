@@ -78,6 +78,9 @@ function mainLoop() {
       uploadBallotManifest(); // TODO: when?
    } else if (conductorState['seed'] === null) {
       enterSeed();
+   } else { // TODO
+     // Now we can start inputting interpretations:
+     makeNewBallot();
    }
 }
 
@@ -242,8 +245,7 @@ function enterSeed() {
          a.appendChild(pullSheetText);
          ballotListDiv.appendChild(a);
 
-         // Now we can start inputting interpretations:
-         make_new_ballot();
+         getConductorState(mainLoop);
 
 
       })
@@ -266,9 +268,9 @@ function buildOrderedList(elems) {
 
 
 
-// TODO: better name because there's also 'new_ballot':
+// TODO: better name because there's also 'newBallot':
 
-function make_new_ballot() {
+function makeNewBallot() {
    var ballotIdsLeft = ballotsToInspect.filter(function(x) {
       return !(completedBallots.includes(x)); // .indexOf(x) < 0;
    });
@@ -280,7 +282,7 @@ function make_new_ballot() {
          data: JSON.stringify({}),
          contentType: 'application/json'
       }).done(function(msg) {
-         console.log(msg);
+         // console.log(msg);
          finalResultContainer.innerHTML = 'Audit complete! Status: <strong>'+msg['status']+'</strong> ('+msg.progress+')';
          finalResultContainer.style.display = 'block';
          window.scrollTo(0,document.body.scrollHeight); // scroll to the bottom
@@ -288,24 +290,21 @@ function make_new_ballot() {
    } else {
       var ballot_entries = document.getElementById('ballot_entries');
       var ballot_id = ballotIdsLeft[0];
-      ballot_entries.appendChild(new_ballot(ballot_id));
+      ballot_entries.appendChild(newBallot(ballot_id));
    }
 }
 
-function new_ballot(ballot_id) {
+function newBallot(ballot_id) {
    var ballot, numberLabel, innerForm, ballotNumber;
    ballot = document.createElement('div');
    numberLabel = document.createElement('div');
-   innerForm = new_inner_form(ballot_id);
+   innerForm = newInnerForm(ballot_id);
 
    ballot.classList.add('ballot', 'inProgress', 'container');
 
    numberLabel.classList.add('numberLabel', 'inProgress');
    numberLabel.innerText = 'Ballot # '+highestBallot+', ID: '+ballot_id+', Location: '+ballotNumToLocation(ballot_id); // TODO: 'innerText' may not be cross-browser
    highestBallot += 1;
-
-   ballot.appendChild(numberLabel);
-   ballot.appendChild(innerForm);
 
    numberLabel.onclick = function(event) {
       if (innerForm.style.display === 'none') {
@@ -317,10 +316,14 @@ function new_ballot(ballot_id) {
       // window.event.stopPropagation();
       event.stopPropagation();
    };
+
+   ballot.appendChild(numberLabel);
+   ballot.appendChild(innerForm);
+
    return ballot;
 };
 
-function new_inner_form(ballot_id) {
+function newInnerForm(ballot_id) {
 
    var innerForm, saveButton;
    innerForm = document.createElement('div');
@@ -331,7 +334,7 @@ function new_inner_form(ballot_id) {
    innerForm.classList.add('innerForm');
 
    conductorState['all_contests'].forEach(function(contest) {
-      var contestBox = new_race_checkbox(ballot_id, contest.id, contest.title, contest.candidates);
+      var contestBox = newRaceCheckbox(ballot_id, contest.id, contest.title, contest.candidates);
       innerForm.appendChild(contestBox);
    });
 
@@ -362,7 +365,7 @@ function new_inner_form(ballot_id) {
          //   on each interpretation, since we're running for a fixed number of
          //   ballots. In most audits, though, you'd want to check for that
          //   here:
-         make_new_ballot(); // TODO: don't do this if you're clicking to save a second time and we already have an unfinished one
+         makeNewBallot(); // TODO: don't do this if you're clicking to save a second time and we already have an unfinished one
          // window.event.stopPropagation();
          event.stopPropagation();
       })
@@ -372,7 +375,7 @@ function new_inner_form(ballot_id) {
    return innerForm;
 };
 
-function new_race_checkbox(ballot_id, race_id, race_title, race_choices) {
+function newRaceCheckbox(ballot_id, race_id, race_title, race_choices) {
    var div, ul;
    div = document.createElement('div');
    div.innerText = race_title;
