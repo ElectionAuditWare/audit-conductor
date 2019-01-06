@@ -290,6 +290,10 @@ def reset_audit_state():
     audit_state = copy.deepcopy(default_audit_state)
     return ''
 
+@app.route('/reset')
+def send_reset_page():
+    return send_from_directory('ui', 'reset_page.html')
+
 
 ### Static files
 @app.route('/jquery.js')
