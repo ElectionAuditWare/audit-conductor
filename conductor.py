@@ -51,13 +51,29 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 Interpretation = Dict[str, List[Dict[str, str]]]
 
+# 7r2
+# 7s2
+
+# Do we need this, or do we just need the seed?:
+#   (Is it repetitive to track this?)
+
+# x = {'y': z}
+# 
+# def z():
+#    print('hi')
+# 
+# x['y']()
+
+# bp=BallotPolling.BallotPolling()
+
+
 # In the future, we can have more than one of these running concurrently:
 default_audit_state = {
    'all_interpretations': [],
    'seed': None,
    'main_contest_in_progress': None,
-   'contest_name': None,
-   'contest_type_name': None,
+   'audit_name': None,
+   'audit_type_name': None,
    'ballot_manifest': None,
    # these next two can be gotten from 'ballot_manifest':
    'total_number_of_ballots': None,
@@ -156,7 +172,7 @@ def get_ballot_polling_results():
     bp.recompute(results=reported_results, ballots=ballots)
     return(jsonify({'status': bp.get_status(), 'progress': bp.get_progress()}))
 
-contest_types = {
+audit_types = {
     'ballot_polling': {
         'get_results': get_ballot_polling_results,
         'init': None,
@@ -164,33 +180,33 @@ contest_types = {
     }
 
 
-@app.route('/get-contest-types')
-def get_contest_types():
-    return jsonify({'types': list(contest_types.keys())})
+@app.route('/get-audit-types')
+def get_audit_types():
+    return jsonify({'types': list(audit_types.keys())})
 
-@app.route('/set-contest-type', methods=['POST'])
-def set_contest_type():
+@app.route('/set-audit-type', methods=['POST'])
+def set_audit_type():
     data = request.get_json()
     if 'type' in data:
-        if data['type'] in contest_types:
+        if data['type'] in audit_types:
             global audit_state
-            audit_state['contest_type_name'] = data['type']
-            t = contest_types[data['type']]
+            audit_state['audit_type_name'] = data['type']
+            t = audit_types[data['type']]
             return ''
         else:
-            return "That contest type isn't a choice", 422
+            return "That audit type isn't a choice", 422
     else:
         return 'Key "type" not present in request', 422
 
-@app.route('/set-contest-name', methods=['POST'])
-def set_contest_name():
+@app.route('/set-audit-name', methods=['POST'])
+def set_audit_name():
     data = request.get_json()
-    if 'contest_name' in data:
+    if 'audit_name' in data:
         global audit_state
-        audit_state['contest_name'] = data['contest_name']
+        audit_state['audit_name'] = data['audit_name']
         return ''
     else:
-        return 'Key "contest_name" not present in request', 422
+        return 'Key "audit_name" not present in request', 422
 
 @app.route('/get-contests')
 def route_get_contests():
@@ -255,7 +271,7 @@ def get_ballot_pull_sheet():
 def get_audit_status():
     # print(contest_type_name)
     # print(contest_types[contest_type_name])
-    x = contest_types[audit_state['contest_type_name']]['get_results']()
+    x = audit_types[audit_state['audit_type_name']]['get_results']()
     print(x)
     return x
 

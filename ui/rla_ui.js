@@ -18,8 +18,8 @@ var conductorState = {};
 var uiState = {
    'have_displayed_pull_list': false,
 
-   'got_contest_type': false,
-   'got_contest_name': false,
+   'got_audit_type': false,
+   'got_audit_name': false,
    'got_ballot_manifest': false,
    'got_seed': false,
 
@@ -31,9 +31,9 @@ var completedBallots = [];
 var ballotsToInspect = [];
 
 // container divs:
-var contestNameContainer;
+var auditNameContainer;
 var seedContainer;
-var contestTypeContainer;
+var auditTypeContainer;
 var finalResultContainer;
 var cvrUploadContainer;
 var ballotManifestUploadContainer;
@@ -48,9 +48,9 @@ function getById(nodeId) {
 };
 
 window.onload = function() {
-   contestNameContainer = document.getElementById('contestNameContainer');
+   auditNameContainer = document.getElementById('auditNameContainer');
    seedContainer = document.getElementById('seedContainer');
-   contestTypeContainer = document.getElementById('contestTypeContainer');
+   auditTypeContainer = document.getElementById('auditTypeContainer');
    finalResultContainer = document.getElementById('finalResultContainer');
    cvrUploadContainer = document.getElementById('cvrUploadContainer');
    ballotManifestUploadContainer = document.getElementById('ballotManifestUploadContainer');
@@ -83,20 +83,20 @@ function getConductorState(andThen) {
 }
 
 function mainLoop() {
-   if ( ! uiState['got_contest_type']) {
-      var contestType = conductorState['contest_type_name'];
-      if (contestType === null) {
-         chooseContestType();
+   if ( ! uiState['got_audit_type']) {
+      var auditType = conductorState['audit_type_name'];
+      if (auditType === null) {
+         chooseAuditType();
       } else {
-         displayContestType(); // contestType);
+         displayAuditType(); // auditType);
          mainLoop();
       }
-   } else if ( ! uiState['got_contest_name']) {
-      var contestName = conductorState['contest_name'];
-      if (contestName === null) {
-         enterContestName();
+   } else if ( ! uiState['got_audit_name']) {
+      var auditName = conductorState['audit_name'];
+      if (auditName === null) {
+         enterAuditName();
       } else {
-         displayContestName(); // contestName);
+         displayAuditName(); // auditName);
          mainLoop();
       }
    } else if ( ! uiState['got_ballot_manifest'] ) {
@@ -119,39 +119,39 @@ function mainLoop() {
    }
 }
 
-function chooseContestType() {
+function chooseAuditType() {
    $.ajax({
-      url: '/get-contest-types',
+      url: '/get-audit-types',
       method: 'GET',
       contentType: 'application/json',
    }).done(function(msg) {
       var types = msg['types'];
-      var contestTypeSelect = document.createElement('select');
+      var auditTypeSelect = document.createElement('select');
       var saveButton = document.createElement('button');
-      ([''].concat(types)).forEach(function(contestType) {
+      ([''].concat(types)).forEach(function(auditType) {
          var opt = document.createElement('option');
-         opt.value = contestType;
-         opt.innerHTML = contestType;
-         contestTypeSelect.appendChild(opt);
+         opt.value = auditType;
+         opt.innerHTML = auditType;
+         auditTypeSelect.appendChild(opt);
       });
       saveButton.value = 'Save';
       saveButton.innerHTML = 'Save';
-      contestTypeContainer.appendChild(contestTypeSelect);
-      contestTypeContainer.appendChild(saveButton);
+      auditTypeContainer.appendChild(auditTypeSelect);
+      auditTypeContainer.appendChild(saveButton);
       saveButton.onclick = function() {
-         if(contestTypeSelect.selectedIndex > 0) {
+         if(auditTypeSelect.selectedIndex > 0) {
             // "- 1" because of the first "" option:
-            var typeChoice = types[contestTypeSelect.selectedIndex - 1];
+            var typeChoice = types[auditTypeSelect.selectedIndex - 1];
             if ((typeof(typeChoice) != 'undefined') && (typeChoice != "")) {
                $.ajax({
-                  url: '/set-contest-type',
+                  url: '/set-audit-type',
                   method: 'POST',
                   contentType: 'application/json',
                   data: JSON.stringify({'type': typeChoice}),
                }).done(function() {
-                  // displayContestType(typeChoice);
+                  // displayAuditType(typeChoice);
                   getConductorState(function() {
-                     displayContestType();
+                     displayAuditType();
                      mainLoop(); // this'll now have 'contest_type_name'
                   });
                }).fail(reportError);
@@ -162,31 +162,31 @@ function chooseContestType() {
 }
 
 
-function displayContestType() { // typeChoice) {
-   var typeChoice = conductorState['contest_type_name'];
-   contestTypeContainer.innerHTML = 'Contest type: <strong>' + typeChoice + '</strong>';
-   contestTypeContainer.classList.add('complete');
+function displayAuditType() { // typeChoice) {
+   var typeChoice = conductorState['audit_type_name'];
+   auditTypeContainer.innerHTML = 'Audit type: <strong>' + typeChoice + '</strong>';
+   auditTypeContainer.classList.add('complete');
 
-   uiState['got_contest_type'] = true;
+   uiState['got_audit_type'] = true;
 }
 
 
-function enterContestName() {
-   var saveButton = document.getElementById('contestNameSaveButton');
-   var nameBox = document.getElementById('contestNameBox'); // 'Box' might sound like it's a div -- rename?
-   contestNameContainer.style.display = 'block';
+function enterAuditName() {
+   var saveButton = document.getElementById('auditNameSaveButton');
+   var nameBox = document.getElementById('auditNameBox'); // 'Box' might sound like it's a div -- rename?
+   auditNameContainer.style.display = 'block';
    nameBox.focus();
    saveButton.onclick = function() {
       if(nameBox.value != '') {
          $.ajax({
-            url: '/set-contest-name',
+            url: '/set-audit-name',
             method: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify({'contest_name': nameBox.value}),
+            data: JSON.stringify({'audit_name': nameBox.value}),
          }).done(function() {
-            // uiState['contest_name'] = nameBox.value;
+            // uiState['audit_name'] = nameBox.value;
             getConductorState(function(){
-               displayContestName(); // conductorState['contest_name']);
+               displayAuditName(); // conductorState['contest_name']);
                mainLoop();
             });
          }).fail(reportError);
@@ -194,11 +194,11 @@ function enterContestName() {
    };
 }
 
-function displayContestName() {
-   contestNameContainer.style.display = 'block';
-   contestNameContainer.innerHTML = 'Contest name: <strong>' + conductorState['contest_name'] + '</strong>';
-   contestNameContainer.classList.add('complete');
-   uiState['got_contest_name'] = true;
+function displayAuditName() {
+   auditNameContainer.style.display = 'block';
+   auditNameContainer.innerHTML = 'Audit name: <strong>' + conductorState['audit_name'] + '</strong>';
+   auditNameContainer.classList.add('complete');
+   uiState['got_audit_name'] = true;
 }
 
 function uploadBallotManifest() {
