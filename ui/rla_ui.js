@@ -48,13 +48,13 @@ function getById(nodeId) {
 };
 
 window.onload = function() {
-   auditNameContainer = document.getElementById('auditNameContainer');
-   seedContainer = document.getElementById('seedContainer');
-   auditTypeContainer = document.getElementById('auditTypeContainer');
-   finalResultContainer = document.getElementById('finalResultContainer');
-   cvrUploadContainer = document.getElementById('cvrUploadContainer');
-   ballotManifestUploadContainer = document.getElementById('ballotManifestUploadContainer');
-   ballotListDiv = document.getElementById('listOfBallotsToPull');
+   auditNameContainer = getById('auditNameContainer');
+   seedContainer = getById('seedContainer');
+   auditTypeContainer = getById('auditTypeContainer');
+   finalResultContainer = getById('finalResultContainer');
+   cvrUploadContainer = getById('cvrUploadContainer');
+   ballotManifestUploadContainer = getById('ballotManifestUploadContainer');
+   ballotListDiv = getById('listOfBallotsToPull');
 
    getConductorState(mainLoop);
 /*
@@ -126,10 +126,10 @@ function chooseAuditType() {
       contentType: 'application/json',
    }).done(function(msg) {
       var types = msg['types'];
-      var auditTypeSelect = document.createElement('select');
-      var saveButton = document.createElement('button');
+      var auditTypeSelect = newElem('select');
+      var saveButton = newElem('button');
       ([''].concat(types)).forEach(function(auditType) {
-         var opt = document.createElement('option');
+         var opt = newElem('option');
          opt.value = auditType;
          opt.innerHTML = auditType;
          auditTypeSelect.appendChild(opt);
@@ -172,8 +172,8 @@ function displayAuditType() { // typeChoice) {
 
 
 function enterAuditName() {
-   var saveButton = document.getElementById('auditNameSaveButton');
-   var nameBox = document.getElementById('auditNameBox'); // 'Box' might sound like it's a div -- rename?
+   var saveButton = getById('auditNameSaveButton');
+   var nameBox = getById('auditNameBox'); // 'Box' might sound like it's a div -- rename?
    auditNameContainer.style.display = 'block';
    nameBox.focus();
    saveButton.onclick = function() {
@@ -206,8 +206,8 @@ function uploadBallotManifest() {
    ballotManifestUploadContainer.style.display = 'block';
 
 
-   var uploadButton = document.getElementById('uploadBallotManifestButton');
-   var uploadForm = document.getElementById('uploadBallotManifestForm');
+   var uploadButton = getById('uploadBallotManifestButton');
+   var uploadForm = getById('uploadBallotManifestForm');
 
    $(uploadButton).click(function() {
       var form_data = new FormData(uploadForm);
@@ -263,8 +263,8 @@ function ballotNumToLocation(fullManifest, ballotNum) {
 function enterSeed() {
    var saveButton, seedTextBox;
    seedContainer.style.display = 'block';
-   saveButton = document.getElementById('seedSaveButton');
-   seedTextBox = document.getElementById('seedTextBox');
+   saveButton = getById('seedSaveButton');
+   seedTextBox = getById('seedTextBox');
 
    seedTextBox.focus();
 
@@ -309,7 +309,7 @@ function displaySeed() {
          ballotListDiv.appendChild(buildOrderedList(ballotsToInspect.slice().sort(function (a, b) {  return a - b;  }))); // numeric sort
 
          var pullSheetText = document.createTextNode('Ballot Pull Sheet...');
-         var a = document.createElement('a');
+         var a = newElem('a');
          a.href = '/ballot-pull-sheet.txt';
          a.target = '_blank';
          a.appendChild(pullSheetText);
@@ -319,10 +319,10 @@ function displaySeed() {
 }
 
 function buildOrderedList(elems) {
-   var ol = document.createElement('ol');
+   var ol = newElem('ol');
  
    elems.forEach(function(elem) {
-      let el = document.createElement('li');
+      let el = newElem('li');
       el.innerHTML = elem;
       ol.appendChild(el);
    });
@@ -353,7 +353,7 @@ function makeNewBallot() {
          window.scrollTo(0,document.body.scrollHeight); // scroll to the bottom
       }).fail(reportError);
    } else {
-      var ballot_entries = document.getElementById('ballot_entries');
+      var ballot_entries = getById('ballot_entries');
       var ballot_id = ballotIdsLeft[0];
       ballot_entries.appendChild(newBallot(ballot_id));
    }
@@ -361,8 +361,8 @@ function makeNewBallot() {
 
 function newBallot(ballot_id) {
    var ballot, numberLabel, innerForm, ballotNumber;
-   ballot = document.createElement('div');
-   numberLabel = document.createElement('div');
+   ballot = newElem('div');
+   numberLabel = newElem('div');
    innerForm = newInnerForm(ballot_id);
 
    ballot.classList.add('ballot', 'inProgress', 'container');
@@ -402,8 +402,8 @@ function newBallot(ballot_id) {
 function newInnerForm(ballot_id) {
 
    var innerForm, saveButton;
-   innerForm = document.createElement('div');
-   saveButton = document.createElement('button');
+   innerForm = newElem('div');
+   saveButton = newElem('button');
    saveButton.innerHTML = 'Save';
 
  
@@ -492,17 +492,17 @@ function newInterpretationConfirmation(interpretationJSON) {
 
 function newRaceCheckbox(ballot_id, race_id, race_title, race_choices) {
    var div, ul;
-   div = document.createElement('div');
+   div = newElem('div');
    div.innerText = race_title;
    div.classList.add('raceDiv');
 
-   ul = document.createElement('ul');
+   ul = newElem('ul');
    ul.setAttribute('style', 'list-style-type: none');
    div.appendChild(ul);
 
    race_choices.concat(['Write-in candidate', 'No selection (undervote)', 'Overvote']).forEach(function(choice,i) {
       var checkbox,label,li;
-      checkbox = document.createElement('input');
+      checkbox = newElem('input');
       checkbox.type = 'radio'; // 'checkbox';
       checkbox.name = contestCheckboxName(ballot_id, race_id);
       // TODO: better-guarantee that these are unique
@@ -511,12 +511,12 @@ function newRaceCheckbox(ballot_id, race_id, race_title, race_choices) {
       checkbox.classList.add('choiceCheckbox');
       checkbox.value = choice;
 
-      label = document.createElement('label');
+      label = newElem('label');
       label.innerHTML = choice; // again, careful!
       label.setAttribute('for', checkbox.id);
       label.classList.add('choiceCheckboxLabel');
 
-      li = document.createElement('li');
+      li = newElem('li');
 
       li.appendChild(checkbox);
       li.appendChild(label);
