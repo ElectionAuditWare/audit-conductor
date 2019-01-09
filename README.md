@@ -15,7 +15,7 @@ simply import them as python modules.
 
 In a python3 venv with python >= 3.4:
 
-  - pip install hypothesis matplotlib numpy scipy cryptorandom pytest flask
+  - pip install hypothesis matplotlib numpy scipy cryptorandom pytest flask pymongo
   - git submodule update --init --recursive
 
 Maybe todo:
@@ -31,7 +31,11 @@ You can run the tests by calling
 
 ## Usage
 
-    FLASK_APP=conductor.py flask run
+    ./conductor.py
+
+or to commit evidence to a database, set a valid DBURI in conductor.cfg and:
+
+    CONDUCTOR_SETTINGS=conductor.cfg ./conductor.py
 
 ## Other requirements
 

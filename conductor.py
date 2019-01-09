@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+"""Conduct a risk-limiting audit.
+"""
 # Keep it simple!
 # 
 # "There are two ways of constructing a software design: One way is to make it so simple that there are obviously no deficiencies, and the other way is to make it so complicated that there are no obvious deficiencies." - C.A.R. Hoare
@@ -10,7 +13,7 @@
 
 import copy
 import csv
-from datetime import datetime # , isoformat
+from datetime import datetime
 from flask import Flask, jsonify, request, url_for, send_from_directory, Response
 from werkzeug import secure_filename
 import os
@@ -29,6 +32,7 @@ import election as WAVEelection
 # import rlacalc
 
 
+app = Flask(__name__, static_url_path='')
 
 # os.sys.path.append('OpenRLA/rivest-sampler-tests')
 #from sampler import generate_outputs
@@ -37,17 +41,6 @@ import election as WAVEelection
 os.sys.path.append('rivest-sampler-tests/src/sampler')
 import sampler
 
-audit_log_dir = 'audit_logs'
-if not os.path.exists(audit_log_dir):
-   os.makedirs(audit_log_dir)
-UPLOAD_FOLDER = 'scratch_files' # better name?
-if not os.path.exists(UPLOAD_FOLDER):
-   os.makedirs(UPLOAD_FOLDER)
-
-
-app = Flask(__name__, static_url_path='')
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 Interpretation = Dict[str, List[Dict[str, str]]]
 
@@ -114,6 +107,15 @@ def test_0(a, b, c):
 call_f(test_0, 4, 5, 6)
 call_f(test_0, c=4, b=5, a=6)
 
+
+def commit_evidence(collection, evidence):
+   """Commit the given evidence to the given collection of the given database
+   if a database is configured.
+   """
+
+   if app.config['db']:
+      committed_evidence = {'evidence': evidence, 'prev_hash': "<hash>"}
+      app.config['db'][collection].insert_one(committed_evidence)
 
 def make_contestant(name):
     return WAVEelection.Contestant(ID=name, name=name)
@@ -203,6 +205,7 @@ def add():
    if 'interpretation' in data:
       global audit_state
       audit_state['all_interpretations'].append(data['interpretation'])
+      commit_evidence('acvrs', data['interpretation'])
       return ''
    else:
       return 'Key "interpretation" is not present in the request', 422
@@ -310,3 +313,37 @@ def style_css():
 def index():
    return send_from_directory('ui','index.html')
 
+
+def main():
+
+    audit_log_dir = 'audit_logs'
+    if not os.path.exists(audit_log_dir):
+        os.makedirs(audit_log_dir)
+    UPLOAD_FOLDER = 'scratch_files' # better name?
+    if not os.path.exists(UPLOAD_FOLDER):
+        os.makedirs(UPLOAD_FOLDER)
+
+    app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
+    app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+    app.config['JURISDICTION'] = 'test'
+    app.config['DBURI'] = None
+    app.config['db'] = None
+
+    if 'CONDUCTOR_SETTINGS' in os.environ:
+       app.config.from_envvar('CONDUCTOR_SETTINGS')
+
+    if app.config['DBURI']:
+        import pymongo
+
+        dbname = "%s_%s" % (app.config['JURISDICTION'], datetime.isoformat(datetime.now(), timespec="seconds"))
+
+        client = pymongo.MongoClient(app.config['DBURI'])
+        app.config['db'] = client[dbname]
+
+        commit_evidence('seed', "demoseed")
+
+    app.run()
+
+
+if __name__ == '__main__':
+    main()
