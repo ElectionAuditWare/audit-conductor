@@ -20,15 +20,16 @@ var uiState = {
 
    'got_audit_type': false,
    'got_audit_name': false,
+   'got_cvr': false,
    'got_ballot_manifest': false,
    'got_seed': false,
+   'created_finished_ballots': false,
 
    'interpretation_to_confirm': null,
+
+   // 'completed_ballots': [],
    };
 
-var completedBallots = [];
-// Once we set this we don't remove elements from it:
-var ballotsToInspect = [];
 
 // container divs:
 var auditNameContainer;
@@ -38,6 +39,7 @@ var finalResultContainer;
 var cvrUploadContainer;
 var ballotManifestUploadContainer;
 var ballotListDiv; // rename for consistency?
+var ballotEntriesContainer;
 
 // Couple helpers to make the code shorter:
 function newElem(elemType) {
@@ -55,6 +57,7 @@ window.onload = function() {
    cvrUploadContainer = getById('cvrUploadContainer');
    ballotManifestUploadContainer = getById('ballotManifestUploadContainer');
    ballotListDiv = getById('listOfBallotsToPull');
+   ballotEntriesContainer = getById('ballotEntriesContainer');
 
    getConductorState(mainLoop);
 /*
@@ -113,9 +116,11 @@ function mainLoop() {
          displaySeed();
          mainLoop();
       }
+   } else if ( ! uiState['created_finished_ballots'] ) {
+      createFinishedBallots()
    } else { // TODO
      // Now we can start inputting interpretations:
-     makeNewBallot();
+     makeNewBallotOrReturnResults();
    }
 }
 
@@ -335,11 +340,17 @@ function buildOrderedList(elems) {
 
 // TODO: better name because there's also 'newBallot':
 
-function makeNewBallot() {
+function makeNewBallotOrReturnResults() {
+   // Less diff noise -- TODO:
+   getConductorState(makeNewBallotOrReturnResultsPrime);
+}
+
+function makeNewBallotOrReturnResultsPrime() {
    var ballotIdsLeft = conductorState['ballot_ids'].filter(function(x) {
-      return !(completedBallots.includes(x)); // .indexOf(x) < 0;
+      return !(conductorState['all_interpretations'].map(function(y) { return y['ballot_id']; }).includes(x));
+      // return !(uiState['completed_ballots'].includes(x)); // .indexOf(x) < 0;
    });
-   // console.log(ballotIdsLeft, completedBallots);
+   // console.log(ballotIdsLeft, uiState['completed_ballots']);
    if (ballotIdsLeft.length == 0) {
       $.ajax({
          url: '/get-audit-status',
@@ -347,29 +358,32 @@ function makeNewBallot() {
          data: JSON.stringify({}),
          contentType: 'application/json'
       }).done(function(msg) {
-         // console.log(msg);
          finalResultContainer.innerHTML = 'Audit complete! Status: <strong>'+msg['status']+'</strong> ('+msg.progress+')<br /><br /><a href="/reset">Reset and audit another contest</a>';
          finalResultContainer.style.display = 'block';
          window.scrollTo(0,document.body.scrollHeight); // scroll to the bottom
       }).fail(reportError);
    } else {
-      var ballot_entries = getById('ballot_entries');
       var ballot_id = ballotIdsLeft[0];
-      ballot_entries.appendChild(newBallot(ballot_id));
+      var ballotDiv = newBlankBallot(ballot_id);
+
+      ballotDiv.appendChild(newInnerForm(ballot_id));
+      ballotDiv.classList.add('inProgress');
+
+      ballotEntriesContainer.appendChild(ballotDiv);
+
+
    }
 }
 
-function newBallot(ballot_id) {
+// todo: not 'blank': 'newBallotDiv'?:
+function newBlankBallot(ballot_id) {
    var ballot, numberLabel, innerForm, ballotNumber;
    ballot = newElem('div');
+   ballot.classList.add('ballot', 'container');
    numberLabel = newElem('div');
-   innerForm = newInnerForm(ballot_id);
-
-   ballot.classList.add('ballot', 'inProgress', 'container');
 
    numberLabel.classList.add('numberLabel', 'inProgress');
-   numberLabel.innerText = 'Ballot # '+highestBallot+', ID: '+ballot_id+', Location: '+ballotNumToLocation(conductorState['ballot_manifest'], ballot_id); // TODO: 'innerText' may not be cross-browser
-   highestBallot += 1;
+   numberLabel.innerText = 'Ballot # '+(conductorState['ballot_ids'].indexOf(ballot_id)+1)+', ID: '+ballot_id+', Location: '+ballotNumToLocation(conductorState['ballot_manifest'], ballot_id); // TODO: 'innerText' may not be cross-browser
 
    numberLabel.onclick = function(event) {
       // This work in all IEs we need it to?:
@@ -385,7 +399,7 @@ function newBallot(ballot_id) {
       if (innerForm.style.display === 'none') {
          innerForm.style.display = 'block';
          // TODO: 'includes' may be too new for some browsers:
-      } else if (completedBallots.includes(ballot_id)) {
+      } else if (uiState['completed_ballots'].includes(ballot_id)) {
          innerForm.style.display = 'none';
       }
 */
@@ -394,9 +408,26 @@ function newBallot(ballot_id) {
    };
 
    ballot.appendChild(numberLabel);
-   ballot.appendChild(innerForm);
+   // ballot.appendChild(innerForm);
 
    return ballot;
+};
+
+function newCompleteBallot(ballot_id) {
+};
+
+function createFinishedBallots() {
+   // var
+   conductorState['all_interpretations'].forEach(function(interpretationJSON) {
+      var ballotDiv = newBlankBallot(interpretationJSON['ballot_id']);
+
+      ballotDiv.appendChild(candidateSelectionList(interpretationJSON)); // TODO
+      ballotDiv.classList.add('complete');
+
+      ballotEntriesContainer.appendChild(ballotDiv);
+   });
+   uiState['created_finished_ballots'] = true;
+   mainLoop();
 };
 
 function newInnerForm(ballot_id) {
@@ -417,7 +448,6 @@ function newInnerForm(ballot_id) {
    innerForm.appendChild(saveButton);
 
    saveButton.onclick = function(event) {
-      var that = this;
       var dat = {ballot_id: ballot_id, contests: {}};
       conductorState['all_contests'].forEach(function(contest) {
          var x = document.querySelector('input[name="'+contestCheckboxName(ballot_id, contest.id)+'"]:checked').value;
@@ -453,7 +483,7 @@ function newInterpretationConfirmation(interpretationJSON) {
          contentType: 'application/json'
       })
       .done(function(msg){
-         completedBallots.push(interpretationJSON['ballot_id']);
+         //uiState['completed_ballots'].push(interpretationJSON['ballot_id']);
          confirmationDiv.parentNode.classList.replace('inProgress','complete');
          confirmationDiv.style.display = 'none';
          confirmButton.style.display = 'none';
@@ -463,7 +493,7 @@ function newInterpretationConfirmation(interpretationJSON) {
          //   on each interpretation, since we're running for a fixed number of
          //   ballots. In most audits, though, you'd want to check for that
          //   here:
-         makeNewBallot(); // TODO: don't do this if you're clicking to save a second time and we already have an unfinished one
+         makeNewBallotOrReturnResults(); // TODO: don't do this if you're clicking to save a second time and we already have an unfinished one
          // window.event.stopPropagation();
          event.stopPropagation(); // Maybe unnecessary
       }).fail(reportError);
@@ -474,6 +504,14 @@ function newInterpretationConfirmation(interpretationJSON) {
       confirmationDiv.parentNode.appendChild(newInnerForm(interpretationJSON['ballot_id']));
       confirmationDiv.parentNode.removeChild(confirmationDiv);
    };
+
+   confirmationDiv.appendChild(candidateSelectionList(interpretationJSON));
+   confirmationDiv.appendChild(rejectButton);
+   confirmationDiv.appendChild(confirmButton);
+   return confirmationDiv;
+}
+
+function candidateSelectionList(interpretationJSON) {
    var resultList = [];
 /*
    for (var contestId in interpretationJSON['contests']) {
@@ -483,11 +521,8 @@ function newInterpretationConfirmation(interpretationJSON) {
    conductorState['all_contests'].forEach(function(contest) {
       resultList.push(contest.title + ': ' + interpretationJSON['contests'][contest.id]);
    });
-   confirmationDiv.appendChild(buildOrderedList(resultList));
-   confirmationDiv.appendChild(rejectButton);
-   confirmationDiv.appendChild(confirmButton);
-   return confirmationDiv;
-}
+   return buildOrderedList(resultList);
+};
 
 
 function newRaceCheckbox(ballot_id, race_id, race_title, race_choices) {
