@@ -70,7 +70,7 @@ more-itertools=4.3.0=py37_0
 nbconvert=5.3.1=py37_0
 nbformat=4.4.0=py37_0
 ncurses=6.1=hf484d3e_0
-notebook=5.7.0=py37_0
+notebook=5.7.4=py37_0
 numpy=1.15.4=py37h1d66e8a_0
 numpy-base=1.15.4=py37h81de0dd_0
 openssl=1.1.1a=h7b6447c_0
@@ -104,7 +104,7 @@ qt=5.6.3=h8bf5577_3
 qtconsole=4.4.2=py37_0
 readline=7.0=h7b6447c_5
 repoze.lru=0.7=py37_0
-requests=2.19.1=py37_0
+requests=2.20.1=py37_0
 routes=2.4.1=py37_0
 ruamel_yaml=0.15.46=py37h14c3975_0
 scipy=1.1.0=py37hfa4b5c9_1
