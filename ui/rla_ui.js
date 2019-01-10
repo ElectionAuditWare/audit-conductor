@@ -22,12 +22,11 @@ var uiState = {
    'got_audit_name': false,
    'got_cvr': false,
    'got_ballot_manifest': false,
+   'got_cvr_file': false,
    'got_seed': false,
    'created_finished_ballots': false,
 
    'interpretation_to_confirm': null,
-
-   // 'completed_ballots': [],
    };
 
 
@@ -36,7 +35,7 @@ var auditNameContainer;
 var seedContainer;
 var auditTypeContainer;
 var finalResultContainer;
-var cvrUploadContainer;
+var cvrFileUploadContainer;
 var ballotManifestUploadContainer;
 var ballotListDiv; // rename for consistency?
 var ballotEntriesContainer;
@@ -54,7 +53,7 @@ window.onload = function() {
    seedContainer = getById('seedContainer');
    auditTypeContainer = getById('auditTypeContainer');
    finalResultContainer = getById('finalResultContainer');
-   cvrUploadContainer = getById('cvrUploadContainer');
+   cvrFileUploadContainer = getById('cvrFileUploadContainer');
    ballotManifestUploadContainer = getById('ballotManifestUploadContainer');
    ballotListDiv = getById('listOfBallotsToPull');
    ballotEntriesContainer = getById('ballotEntriesContainer');
@@ -91,7 +90,7 @@ function mainLoop() {
       if (auditType === null) {
          chooseAuditType();
       } else {
-         displayAuditType(); // auditType);
+         displayAuditType();
          mainLoop();
       }
    } else if ( ! uiState['got_audit_name']) {
@@ -99,7 +98,7 @@ function mainLoop() {
       if (auditName === null) {
          enterAuditName();
       } else {
-         displayAuditName(); // auditName);
+         displayAuditName();
          mainLoop();
       }
    } else if ( ! uiState['got_ballot_manifest'] ) {
@@ -107,6 +106,14 @@ function mainLoop() {
          uploadBallotManifest(); // TODO: when?
       } else {
          displayBallotManifest();
+         mainLoop();
+      }
+
+   } else if ((conductorState['audit_type_name'] == 'ballot_comparison') && ( ! uiState['got_cvr_file'] )) {
+      if (conductorState['cvr_hash'] === null) {
+         uploadCVRFile();
+      } else {
+         displayCVRFile();
          mainLoop();
       }
    } else if ( ! uiState['got_seed'] ) {
@@ -263,7 +270,39 @@ function ballotNumToLocation(fullManifest, ballotNum) {
    } while (finished == false);
 }
 
+function uploadCVRFile() {
+   cvrFileUploadContainer.style.display = 'block';
 
+   var uploadButton = getById('uploadCVRButton');
+   var uploadForm = getById('uploadCVRForm');
+
+   $(uploadButton).click(function() {
+      var form_data = new FormData(uploadForm);
+      $.ajax({
+         type: 'POST',
+         url: '/upload-cvr-file',
+         data: form_data,
+         contentType: false,
+         cache: false,
+         processData: false,
+         success: function(data) {
+            console.log('Success!');
+            getConductorState(function() {
+               mainLoop();
+            });
+         },
+      });
+   });
+
+}
+
+function displayCVRFile() {
+   cvrFileUploadContainer.style.display = 'block';
+   cvrFileUploadContainer.innerHTML = '(CVR file uploaded)';
+   cvrFileUploadContainer.classList.add('complete');
+
+   uiState['got_cvr_file'] = true;
+};
 
 function enterSeed() {
    var saveButton, seedTextBox;
@@ -348,9 +387,7 @@ function makeNewBallotOrReturnResults() {
 function makeNewBallotOrReturnResultsPrime() {
    var ballotIdsLeft = conductorState['ballot_ids'].filter(function(x) {
       return !(conductorState['all_interpretations'].map(function(y) { return y['ballot_id']; }).includes(x));
-      // return !(uiState['completed_ballots'].includes(x)); // .indexOf(x) < 0;
    });
-   // console.log(ballotIdsLeft, uiState['completed_ballots']);
    if (ballotIdsLeft.length == 0) {
       $.ajax({
          url: '/get-audit-status',
@@ -417,11 +454,10 @@ function newCompleteBallot(ballot_id) {
 };
 
 function createFinishedBallots() {
-   // var
    conductorState['all_interpretations'].forEach(function(interpretationJSON) {
       var ballotDiv = newBlankBallot(interpretationJSON['ballot_id']);
 
-      ballotDiv.appendChild(candidateSelectionList(interpretationJSON)); // TODO
+      ballotDiv.appendChild(candidateSelectionList(interpretationJSON));
       ballotDiv.classList.add('complete');
 
       ballotEntriesContainer.appendChild(ballotDiv);
@@ -469,9 +505,7 @@ function newInterpretationConfirmation(interpretationJSON) {
    rejectButton.value = 'Reject';
    rejectButton.innerHTML = 'Reject';
    confirmationDiv.classList.add('confirmationDiv');
-   // confirmationDiv.innerHTML = JSON.stringify(interpretationJSON);
 
-      // console.log(dat);
       // TODO: to be extra safe here, distinguish between first click (create) and
       //   others (update) when calling jquery.ajax (maybe {update:true}?)
    confirmButton.onclick = function(event) {
@@ -483,7 +517,6 @@ function newInterpretationConfirmation(interpretationJSON) {
          contentType: 'application/json'
       })
       .done(function(msg){
-         //uiState['completed_ballots'].push(interpretationJSON['ballot_id']);
          confirmationDiv.parentNode.classList.replace('inProgress','complete');
          confirmationDiv.style.display = 'none';
          confirmButton.style.display = 'none';

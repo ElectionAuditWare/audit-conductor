@@ -27,6 +27,18 @@
          </form>
 
       </div>
+      <div id="cvrFileUploadContainer" class="container" style="display:none">
+         <p>Upload a Cast Vote Record (CVR) file</p>
+         <form id="uploadCVRForm" method="post" enctype="multipart/form-data">
+            <fieldset>
+               <label for="file">Select a file</label>
+               <input name="file" type="file">
+            </fieldset>
+            <fieldset>
+               <button id="uploadCVRButton" type="button">Upload</button>
+            </fieldset>
+         </form>
+      </div>
       <div id="seedContainer" class="container" style="display:none">
          Enter random seed:<br />
          <input type="text" id="seedTextBox" />

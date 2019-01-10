@@ -28,11 +28,6 @@ import election as WAVEelection
 # os.sys.path.append('audit_cvrs/audit_cvrs')
 # import rlacalc
 
-
-
-# os.sys.path.append('OpenRLA/rivest-sampler-tests')
-#from sampler import generate_outputs
-# todo: get the sampler from the source instead of OpenRLA's/audit_cvr's copy:
 # In the future, replace this with consistent_sampler?:
 os.sys.path.append('rivest-sampler-tests/src/sampler')
 import sampler
@@ -51,24 +46,17 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 Interpretation = Dict[str, List[Dict[str, str]]]
 
-# 7r2
-# 7s2
-
 # Do we need this, or do we just need the seed?:
 #   (Is it repetitive to track this?)
 
-# x = {'y': z}
-# 
-# def z():
-#    print('hi')
-# 
-# x['y']()
-
-# bp=BallotPolling.BallotPolling()
-
-
 # In the future, we can have more than one of these running concurrently:
+# Maybe a named tuple instead?:
 default_audit_state = {
+   # We don't send this whole thing over the wire every time, because it can be huge. Everything else we do:
+   #   (Maybe it shouldn't be in audit_state, then?)
+   'cvrs': None,
+
+   'cvr_hash': None,
    'all_interpretations': [],
    'seed': None,
    'main_contest_in_progress': None,
@@ -83,32 +71,55 @@ default_audit_state = {
    # ("Main" means the one contest we're non-opportunistically auditing):
    # TODO: write-in etc should go here (so we have them in the ballot polling)
    'all_contests': [
-      {'id': 'congress_district_1',
-       'title': 'Representative in Congress District 1',
-       'candidates': ['David N. Cicilline', 'Christopher F. Young']
+
+#      {'id': 'congress_district_1',
+#       'title': 'Representative in Congress District 1 (13213)',
+#       'candidates': ['DEM David N. Cicilline (13215)', 'REP Patrick J. Donovan'],
+#      },
+      {'id': 'lieutenant_governor',
+       'title': 'Lieutenant Governor',
+       'candidates': ['DEM Daniel J. McKee', 'REP Paul E. Pence', 'MOD Joel J. Hellmann', 'Ind Jonathan J. Riccitelli'],
       },
-      {'id': 'assembly_19',
-       'title': 'Senator in General Assembly District 19',
-       'candidates': ['Alex D. Marszalkowski', 'David M. Chenevert']
+      {'id': 'senator',
+       'title': 'Senator in Congress',
+       'candidates': ['DEM Sheldon Whitehouse', 'REP Robert G. Flanders, Jr.'],
       },
-      {'id': 'council_at_large',
-       'title': 'Town Council At-Large Cumberland',
-       'candidates': ['Thomas Kane', 'Peter J. Bradley', 'Charles D. Wilk']
+      {'id': 'governor',
+       'title': 'Governor',
+       'candidates': ['DEM Gina M. Raimondo', 'REP Allan W. Fung'],
       },
       ],
-   'main_contest_id': 'congress_district_1',
+   'main_contest_id': 'lieutenant_governor', #congress_district_1',
    #ballots_cast_for_main_apparent_winner = 600
    # total_main_ballots_cast = 1000
    'main_reported_results': [
-      {'candidate': 'David N. Cicilline',
-       'percentage': 0.9, # 0.6,
-       'votes': 90,
-      },
-      {'candidate': 'Christopher F. Young',
-       'percentage': 0.1, # 0.4,
-       'votes': 10,
-      },
-      ],
+       {'candidate': 'DEM Daniel J. McKee',
+        'percentage': 0.9,
+        'votes': 90, # TODO: these don't add up to total count -- matters?
+       },
+       {'candidate': 'REP Paul E. Pence',
+        'percentage': 0.04,
+        'votes': 4,
+       },
+       {'candidate': 'MOD Joel J. Hellmann',
+        'percentage': 0.04,
+        'votes': 4,
+       },
+       {'candidate': 'Ind Jonathan J. Riccitelli',
+        'percentage': 0.02,
+        'votes': 2
+       },
+       ]
+
+#      {'candidate': 'DEM David N. Cicilline (13215)',
+#       'percentage': 0.9, # 0.6,
+#       'votes': 90,
+#      },
+#      {'candidate': 'REP Patrick J. Donovan',
+#       'percentage': 0.1, # 0.4,
+#       'votes': 10,
+#      },
+#      ],
    }
 
 audit_state = copy.deepcopy(default_audit_state)
@@ -166,15 +177,65 @@ def get_ballot_polling_results():
     all_contestants = { name: make_contestant(name) for name in all_contestant_names }
     reported_results = [ make_result(all_contestants, r) for r in audit_state['main_reported_results'] ]
 
-    bp.init(results=reported_results, ballot_count=100)
+    bp.init(results=reported_results, ballot_count=audit_state['total_number_of_ballots']) # 100)
     bp.set_parameters([1]) # this is a tolerance of 1%
     ballots = [ make_ballot(all_contestants, i) for i in audit_state['all_interpretations'] ]
     bp.recompute(results=reported_results, ballots=ballots)
+
     return(jsonify({'status': bp.get_status(), 'progress': bp.get_progress()}))
+
+def get_ballot_comparison_results():
+
+    rla = WAVEaudit.Comparison()
+
+    # TODO: "foreach" the contests and then remove this
+    contest = list(filter(lambda c: c['id'] == audit_state['main_contest_id'], audit_state['all_contests']))[0]
+
+    # TODO: also replace these lines with getting directly from CVR (is that the usual way to do it?):
+    all_contestant_names = list(set(contest['candidates']).union({ i['contests'][audit_state['main_contest_id']] for i in audit_state['all_interpretations']}))
+    all_contestants = { name: make_contestant(name) for name in all_contestant_names }
+    reported_results = [ make_result(all_contestants, r) for r in audit_state['main_reported_results'] ]
+
+    ballot_count = audit_state['total_number_of_ballots'] # 100 # TODO: this is the number we sampled, or total?
+
+    rla.init(reported_results, ballot_count)
+
+    # These are, in order:
+    #   - Risk Limit   (note it's: float(param[0]) / 100)
+    #   - Error Inflation Factor
+    #   - Expected 1-vote Overstatement Rate
+    #   - Expected 2-vote Overstatement Rate
+    #   - Expected 1-vote Understatement Rate
+    #   - Expected 2-vote Understatement Rate
+    # These values are taken from the RIWAVE tests:
+    rla.set_parameters([5, 1.03905, 0.001, 0.0001, 0.001, 0.0001])
+
+    ballots = []
+    for interpretation in audit_state['all_interpretations']:
+        print('i')
+        ballot = WAVEelection.Ballot()
+        ballot.set_actual_value(all_contestants[interpretation['contests'][contest['id']]])
+        # TODO: this is one way to do the ballot number but it might not be (probably isn't) the best:
+        matching_cvr = audit_state['cvrs'][interpretation['ballot_id']]
+        print('matching_cvr', matching_cvr)
+        print(all_contestants)
+        ballot.set_reported_value(all_contestants[matching_cvr[contest['title']]])
+        ballots.append(ballot)
+
+
+    rla.recompute(ballots, reported_results)
+    # self.assertEqual(rla._stopping_count, 96)
+
+    return(jsonify({'status': rla.get_status(), 'progress': rla.get_progress()}))
+
 
 audit_types = {
     'ballot_polling': {
         'get_results': get_ballot_polling_results,
+        'init': None,
+        },
+    'ballot_comparison': {
+        'get_results': get_ballot_comparison_results,
         'init': None,
         },
     }
@@ -230,7 +291,12 @@ def get_all_interpretations():
 
 @app.route('/get-audit-state', methods=['GET', 'POST'])
 def get_audit_state():
-   return jsonify(audit_state)
+   without_cvrs = { k: v for k, v in audit_state.items() if k != 'cvrs' }
+   if audit_state['audit_name']:
+       fname = os.path.join(audit_log_dir, audit_state['audit_name']+'_states.txt')
+       with open(fname, 'a') as states_file:
+           states_file.write('\n'+str(tuple((datetime.now().isoformat(), without_cvrs))))
+   return jsonify(without_cvrs)
 
 @app.route('/set-seed', methods=['POST'])
 def set_seed():
@@ -310,6 +376,29 @@ def reset_audit_state():
 def send_reset_page():
     return send_from_directory('ui', 'reset_page.html')
 
+@app.route('/upload-cvr-file', methods=['POST'])
+def upload_cvr():
+    if 'file' not in request.files:
+        return 'File not uploaded', 400
+    file = request.files['file']
+    if file.filename == '':
+        return 'No selected file', 400
+    if file:
+        filename = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(file.filename))
+        file.save(filename)
+        with open(filename, newline='') as csvfile:
+            reader = csv.DictReader(csvfile)
+
+            # TODO: we can do this more efficiently than holding it all in RAM:
+            rows = [ dict(r) for r in reader ]
+            print(rows[:5])
+
+            # TODO: check that the CVR file matches the reported results
+
+            audit_state['cvrs'] = rows
+            cvr_hash = 'test-hash' # TODO
+            audit_state['cvr_hash'] = cvr_hash
+            return jsonify({'cvr_hash': cvr_hash})
 
 ### Static files
 @app.route('/jquery.js')
