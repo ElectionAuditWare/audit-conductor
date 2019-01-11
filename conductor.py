@@ -92,23 +92,54 @@ default_audit_state = {
    'main_contest_id': 'lieutenant_governor', #congress_district_1',
    #ballots_cast_for_main_apparent_winner = 600
    # total_main_ballots_cast = 1000
-   'main_reported_results': [
-       {'candidate': 'DEM Daniel J. McKee',
-        'percentage': 0.9,
-        'votes': 90, # TODO: these don't add up to total count -- matters?
+   'reported_results': [
+       {'contest_id': 'lieutenant_governor',
+        'results': [
+          {'candidate': 'DEM Daniel J. McKee',
+           'percentage': 0.9,
+           'votes': 90, # TODO: these don't add up to total count -- matters?
+          },
+          {'candidate': 'REP Paul E. Pence',
+           'percentage': 0.04,
+           'votes': 4,
+          },
+          {'candidate': 'MOD Joel J. Hellmann',
+           'percentage': 0.04,
+           'votes': 4,
+          },
+          {'candidate': 'Ind Jonathan J. Riccitelli',
+           'percentage': 0.02,
+           'votes': 2
+          },
+          ]
        },
-       {'candidate': 'REP Paul E. Pence',
-        'percentage': 0.04,
-        'votes': 4,
+
+       {'contest_id': 'senator',
+        'results': [
+           {'candidate': 'DEM Sheldon Whitehouse',
+            'percentage': 0.7,
+            'votes': 70,
+           },
+           {'candidate': 'REP Robert G. Flanders, Jr.',
+            'percentage': 0.3,
+            'votes': 30,
+           },
+           ],
        },
-       {'candidate': 'MOD Joel J. Hellmann',
-        'percentage': 0.04,
-        'votes': 4,
+       {'contest_id': 'governor',
+        'results': [
+           {'candidate': 'DEM Gina M. Raimondo',
+            'percentage': 0.55,
+            'votes': 55,
+           },
+           {'candidate': 'REP Allan W. Fung',
+            'percentage': 0.45,
+            'votes': 45,
+           },
+           ]
        },
-       {'candidate': 'Ind Jonathan J. Riccitelli',
-        'percentage': 0.02,
-        'votes': 2
-       },
+
+
        ]
 
 #      {'candidate': 'DEM David N. Cicilline (13215)',
@@ -152,37 +183,42 @@ def make_result(all_contestants, result_dict):
     contestant = all_contestants[result_dict['candidate']]
     return WAVEelection.Result(contestant=contestant, percentage=result_dict['percentage'], votes=result_dict['votes'])
 
-def make_ballot(all_contestants, interpretation):
+def make_ballot(all_contestants, interpretation, contest_id):
     ballot = WAVEelection.Ballot()
     #ballot.set_audit_seq_num(i+1)
     #ballot.get_physical_ballot_num(i+1):
     # interp {'ballot_id': 9104, 'contests': {'congress_district_1': 'David N. Cicilline', 'assembly_19': 'David M. Chenevert', 'council_at_large': 'Peter J. Bradley'}}
     # ballot.set_reported_value(yes) # for ballot comparison
-    ballot.set_actual_value(all_contestants[interpretation['contests'][audit_state['main_contest_id']]])
+    ballot.set_actual_value(all_contestants[interpretation['contests'][contest_id]])
     return ballot
 
 # TODO: type:
 def get_ballot_polling_results():
     bp = WAVEaudit.BallotPolling()
-    # contest = contests[main_contest_id]
-    # TODO: 'contests' should probably be a dict instead:
-    contest = list(filter(lambda c: c['id'] == audit_state['main_contest_id'], audit_state['all_contests']))[0]
 
-    # TODO: clean up how we do this. This is just a quick way to
-    #   make sure we have all options since there may be ones not
-    #   in the contest description (e.g. write-ins, or "no
-    #   selection"):
-    all_contestant_names = list(set(contest['candidates']).union({ i['contests'][audit_state['main_contest_id']] for i in audit_state['all_interpretations']}))
+    contest_outcomes = []
+    for results in audit_state['reported_results']:
+        contest_id = results['contest_id']
+        # TODO: 'all_contests' should probably be a dict instead:
+        contest        = list(filter(lambda c: c['id'] == contest_id, audit_state['all_contests']))[0]
+        contest_result = list(filter(lambda c: c['contest_id'] == contest_id, audit_state['reported_results']))[0]
+    
+        # TODO: clean up how we do this. This is just a quick way to
+        #   make sure we have all options since there may be ones not
+        #   in the contest description (e.g. write-ins, or "no
+        #   selection"):
+        all_contestant_names = list(set(contest['candidates']).union({ i['contests'][contest_id] for i in audit_state['all_interpretations']}))
+    
+        all_contestants = { name: make_contestant(name) for name in all_contestant_names }
+        reported_results = [ make_result(all_contestants, r) for r in contest_result['results'] ]
+    
+        bp.init(results=reported_results, ballot_count=audit_state['total_number_of_ballots']) # 100)
+        bp.set_parameters([1]) # this is a tolerance of 1%
+        ballots = [ make_ballot(all_contestants, i, contest_id) for i in audit_state['all_interpretations'] ]
+        bp.recompute(results=reported_results, ballots=ballots)
+        contest_outcomes.append({'status': bp.get_status(), 'progress': bp.get_progress(), 'contest_id': contest['id']})
 
-    all_contestants = { name: make_contestant(name) for name in all_contestant_names }
-    reported_results = [ make_result(all_contestants, r) for r in audit_state['main_reported_results'] ]
-
-    bp.init(results=reported_results, ballot_count=audit_state['total_number_of_ballots']) # 100)
-    bp.set_parameters([1]) # this is a tolerance of 1%
-    ballots = [ make_ballot(all_contestants, i) for i in audit_state['all_interpretations'] ]
-    bp.recompute(results=reported_results, ballots=ballots)
-
-    return(jsonify({'status': bp.get_status(), 'progress': bp.get_progress()}))
+    return(jsonify({'outcomes': contest_outcomes}))
 
 def get_ballot_comparison_results():
 
@@ -194,7 +230,9 @@ def get_ballot_comparison_results():
     # TODO: also replace these lines with getting directly from CVR (is that the usual way to do it?):
     all_contestant_names = list(set(contest['candidates']).union({ i['contests'][audit_state['main_contest_id']] for i in audit_state['all_interpretations']}))
     all_contestants = { name: make_contestant(name) for name in all_contestant_names }
-    reported_results = [ make_result(all_contestants, r) for r in audit_state['main_reported_results'] ]
+
+    # TODO: [0] here is very short-term:
+    reported_results = [ make_result(all_contestants, r) for r in audit_state['reported_results'][0]['results'] ]
 
     ballot_count = audit_state['total_number_of_ballots'] # 100 # TODO: this is the number we sampled, or total?
 
@@ -226,7 +264,9 @@ def get_ballot_comparison_results():
     rla.recompute(ballots, reported_results)
     # self.assertEqual(rla._stopping_count, 96)
 
-    return(jsonify({'status': rla.get_status(), 'progress': rla.get_progress()}))
+    # TODO: all outcomes, not just 'main_':
+    contest_outcomes = [{'status': rla.get_status(), 'progress': rla.get_progress(), 'contest_id': contest['id']}]
+    return(jsonify({'outcomes': contest_outcomes}))
 
 
 audit_types = {

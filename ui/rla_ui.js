@@ -403,7 +403,11 @@ function makeNewBallotOrReturnResultsPrime() {
          data: JSON.stringify({}),
          contentType: 'application/json'
       }).done(function(msg) {
-         finalResultContainer.innerHTML = 'Audit complete! Status: <strong>'+msg['status']+'</strong> ('+msg.progress+')<br /><br /><a href="/reset">Reset and audit another contest</a>';
+         finalResultContainer.innerHTML = 'Audit complete!';
+         msg['outcomes'].forEach(function(outcome) {
+            finalResultContainer.innerHTML += '<p>Contest: <strong>'+outcome['contest_id']+'</strong> Status: <strong>'+outcome['status']+'</strong> ('+outcome.progress+')</p>';
+         });
+         finalResultContainer.innerHTML += '<br /><br /><a href="/reset">Reset and audit another contest</a>';
          finalResultContainer.style.display = 'block';
          window.scrollTo(0,document.body.scrollHeight); // scroll to the bottom
       }).fail(reportError);
