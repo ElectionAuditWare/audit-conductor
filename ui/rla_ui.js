@@ -131,6 +131,14 @@ function mainLoop() {
    }
 }
 
+function auditTypePrettyName(realName) {
+   var prettyNames = {
+      'ballot_polling': 'Ballot Polling',
+      'ballot_comparison': 'Ballot Comparison',
+      };
+   return prettyNames[realName] || realName;
+};
+
 function chooseAuditType() {
    $.ajax({
       url: '/get-audit-types',
@@ -143,7 +151,7 @@ function chooseAuditType() {
       ([''].concat(types)).forEach(function(auditType) {
          var opt = newElem('option');
          opt.value = auditType;
-         opt.innerHTML = auditType;
+         opt.innerHTML = auditTypePrettyName(auditType);
          auditTypeSelect.appendChild(opt);
       });
       saveButton.value = 'Save';
@@ -176,7 +184,7 @@ function chooseAuditType() {
 
 function displayAuditType() { // typeChoice) {
    var typeChoice = conductorState['audit_type_name'];
-   auditTypeContainer.innerHTML = 'Audit type: <strong>' + typeChoice + '</strong>';
+   auditTypeContainer.innerHTML = 'Audit type: <strong>' + auditTypePrettyName(typeChoice) + '</strong>';
    auditTypeContainer.classList.add('complete');
 
    uiState['got_audit_type'] = true;
