@@ -20,6 +20,8 @@ from typing import List, Dict
 # os.sys.path.append('../RIWAVE/WAVE')
 # os.sys.path.append('RIWAVE/WAVE/audit')
 os.sys.path.append('RIWAVE/WAVE')
+os.sys.path.append("2018-bctool/code/")
+
 import audit as WAVEaudit
 import election as WAVEelection
 # import BallotPolling
@@ -31,6 +33,9 @@ import election as WAVEelection
 # In the future, replace this with consistent_sampler?:
 os.sys.path.append('rivest-sampler-tests/src/sampler')
 import sampler
+
+# os.sys.path.append("2018-bctool/code/")
+# import bctool
 
 audit_log_dir = 'audit_logs'
 if not os.path.exists(audit_log_dir):
@@ -217,15 +222,15 @@ def get_ballot_polling_results():
         #   in the contest description (e.g. write-ins, or "no
         #   selection"):
         all_contestant_names = list(set(contest['candidates']).union({ i['contests'][contest_id] for i in audit_state['all_interpretations']}))
-    
+        all_contestant_names = add_non_candidate_choices(all_contestant_names)
+
         all_contestants = { name: make_contestant(name) for name in all_contestant_names }
         reported_results = [ make_result(all_contestants, r) for r in contest_result['results'] ]
-    
         bp.init(results=reported_results, ballot_count=audit_state['total_number_of_ballots']) # 100)
         bp.set_parameters([1]) # this is a tolerance of 1%
         ballots = [ make_ballot(all_contestants, i, contest_id) for i in audit_state['all_interpretations'] ]
         bp.recompute(results=reported_results, ballots=ballots)
-        contest_outcomes.append({'status': bp.get_status(), 'progress': bp.get_progress(), 'contest_id': contest['id']})
+        contest_outcomes.append({'status': bp.get_status(), 'progress': bp.get_progress(), 'contest_id': contest['id'], 'upset_prob': bp.upset_prob})
 
     return(jsonify({'outcomes': contest_outcomes}))
 
@@ -239,13 +244,26 @@ def get_ballot_comparison_results():
     # TODO: also replace these lines with getting directly from CVR (is that the usual way to do it?):
     all_contestant_names = list(set(contest['candidates']).union({ i['contests'][audit_state['main_contest_id']] for i in audit_state['all_interpretations']}))
     all_contestants = { name: make_contestant(name) for name in all_contestant_names }
+    all_contestant_names = add_non_candidate_choices(all_contestant_names)
 
+    reported_choices = {k: 0 for k in all_contestant_names}
+    for d in audit_state['reported_results'][0]['results']:
+        # TODO: This isn't the right way to do this. We need to guarantee that the sum
+        # of all the reported votes is the total number of ballots. Right now, we're just
+        # fudging the numbers by adding the extra ones to the "undervote" report, but this
+        # is high-priority.
+        reported_choices[d['candidate']] += int(d['proportion'] * audit_state['total_number_of_ballots'])
+
+    reported_choices["undervote"] += (audit_state['total_number_of_ballots'] - sum(reported_choices.values()))
+
+    ballot_count = sum(reported_choices.values())
     # TODO: [0] here is very short-term:
+    # print(audit_state['reported_results'][0]['results'])
     reported_results = [ make_result(all_contestants, r) for r in audit_state['reported_results'][0]['results'] ]
 
-    ballot_count = audit_state['total_number_of_ballots'] # 100 # TODO: this is the number we sampled, or total?
+    # ballot_count = audit_state['total_number_of_ballots'] # 100 # TODO: this is the number we sampled, or total?
 
-    rla.init(reported_results, ballot_count)
+    rla.init(reported_results, ballot_count, reported_choices)
 
     # These are, in order:
     #   - Risk Limit   (note it's: float(param[0]) / 100)
@@ -274,7 +292,7 @@ def get_ballot_comparison_results():
     # self.assertEqual(rla._stopping_count, 96)
 
     # TODO: all outcomes, not just 'main_':
-    contest_outcomes = [{'status': rla.get_status(), 'progress': rla.get_progress(), 'contest_id': contest['id']}]
+    contest_outcomes = [{'status': rla.get_status(), 'progress': rla.get_progress(), 'contest_id': contest['id'], 'upset_prob': rla.upset_prob}]
     return(jsonify({'outcomes': contest_outcomes}))
 
 
