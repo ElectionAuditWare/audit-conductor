@@ -125,6 +125,18 @@ default_audit_state = {
            'proportion': 0.02,
            'votes': 2
           },
+          {'candidate': 'overvote',
+           'proportion': 0,
+           'votes': 0,
+          },
+          {'candidate': 'undervote',
+           'proportion': 0,
+           'votes': 0,
+          },
+          {'candidate': 'Write-in',
+           'proportion': 0,
+           'votes': 0,
+          },
           ]
        },
 
@@ -138,6 +150,18 @@ default_audit_state = {
             'proportion': 0.3,
             'votes': 30,
            },
+           {'candidate': 'overvote',
+            'proportion': 0,
+            'votes': 0,
+           },
+           {'candidate': 'undervote',
+            'proportion': 0,
+            'votes': 0,
+           },
+           {'candidate': 'Write-in',
+            'proportion': 0,
+            'votes': 0,
+           },
            ],
        },
        {'contest_id': 'governor',
@@ -149,6 +173,18 @@ default_audit_state = {
            {'candidate': 'REP Allan W. Fung',
             'proportion': 0.45,
             'votes': 45,
+           },
+           {'candidate': 'overvote',
+            'proportion': 0,
+            'votes': 0,
+           },
+           {'candidate': 'undervote',
+            'proportion': 0,
+            'votes': 0,
+           },
+           {'candidate': 'Write-in',
+            'proportion': 0,
+            'votes': 0,
            },
            ]
        },
@@ -225,6 +261,9 @@ def get_ballot_polling_results():
         all_contestant_names = add_non_candidate_choices(all_contestant_names)
 
         all_contestants = { name: make_contestant(name) for name in all_contestant_names }
+        all_contestants['overvote'] = WAVEelection.Overvote()
+        all_contestants['undervote'] = WAVEelection.Undervote()
+
         reported_results = [ make_result(all_contestants, r) for r in contest_result['results'] ]
         bp.init(results=reported_results, ballot_count=audit_state['total_number_of_ballots']) # 100)
         bp.set_parameters([1]) # this is a tolerance of 1%
@@ -238,61 +277,61 @@ def get_ballot_comparison_results():
 
     rla = WAVEaudit.Comparison()
 
-    # TODO: "foreach" the contests and then remove this
-    contest = list(filter(lambda c: c['id'] == audit_state['main_contest_id'], audit_state['all_contests']))[0]
+    contest_outcomes = []
+
+    for results in audit_state['reported_results']:
+        contest_id = results['contest_id']
+        # TODO: 'all_contests' should probably be a dict instead:
+        contest        = list(filter(lambda c: c['id'] == contest_id, audit_state['all_contests']))[0]
+        contest_result = list(filter(lambda c: c['contest_id'] == contest_id, audit_state['reported_results']))[0]
 
     # TODO: also replace these lines with getting directly from CVR (is that the usual way to do it?):
-    all_contestant_names = list(set(contest['candidates']).union({ i['contests'][audit_state['main_contest_id']] for i in audit_state['all_interpretations']}))
-    all_contestants = { name: make_contestant(name) for name in all_contestant_names }
-    all_contestant_names = add_non_candidate_choices(all_contestant_names)
+        all_contestant_names = list(set(contest['candidates']).union({ i['contests'][contest['id']] for i in audit_state['all_interpretations']}))
+        all_contestant_names = add_non_candidate_choices(all_contestant_names)
 
-    reported_choices = {k: 0 for k in all_contestant_names}
-    for d in audit_state['reported_results'][0]['results']:
-        # TODO: This isn't the right way to do this. We need to guarantee that the sum
-        # of all the reported votes is the total number of ballots. Right now, we're just
-        # fudging the numbers by adding the extra ones to the "undervote" report, but this
-        # is high-priority.
-        reported_choices[d['candidate']] += int(d['proportion'] * audit_state['total_number_of_ballots'])
+        all_contestants = { name: make_contestant(name) for name in all_contestant_names }
+        all_contestants['overvote'] = WAVEelection.Overvote()
+        all_contestants['undervote'] = WAVEelection.Undervote()
 
-    reported_choices["undervote"] += (audit_state['total_number_of_ballots'] - sum(reported_choices.values()))
-
-    ballot_count = sum(reported_choices.values())
-    # TODO: [0] here is very short-term:
-    # print(audit_state['reported_results'][0]['results'])
-    reported_results = [ make_result(all_contestants, r) for r in audit_state['reported_results'][0]['results'] ]
-
-    # ballot_count = audit_state['total_number_of_ballots'] # 100 # TODO: this is the number we sampled, or total?
-
-    rla.init(reported_results, ballot_count, reported_choices)
-
-    # These are, in order:
-    #   - Risk Limit   (note it's: float(param[0]) / 100)
-    #   - Error Inflation Factor
-    #   - Expected 1-vote Overstatement Rate
-    #   - Expected 2-vote Overstatement Rate
-    #   - Expected 1-vote Understatement Rate
-    #   - Expected 2-vote Understatement Rate
-    # These values are taken from the RIWAVE tests:
-    rla.set_parameters([5, 1.03905, 0.001, 0.0001, 0.001, 0.0001])
-
-    ballots = []
-    for interpretation in audit_state['all_interpretations']:
-        print('i')
-        ballot = WAVEelection.Ballot()
-        ballot.set_actual_value(all_contestants[interpretation['contests'][contest['id']]])
-        # TODO: this is one way to do the ballot number but it might not be (probably isn't) the best:
-        matching_cvr = audit_state['cvrs'][interpretation['ballot_id']]
-        print('matching_cvr', matching_cvr)
-        print(all_contestants)
-        ballot.set_reported_value(all_contestants[matching_cvr[contest['title']]])
-        ballots.append(ballot)
-
-
-    rla.recompute(ballots, reported_results)
-    # self.assertEqual(rla._stopping_count, 96)
-
-    # TODO: all outcomes, not just 'main_':
-    contest_outcomes = [{'status': rla.get_status(), 'progress': rla.get_progress(), 'contest_id': contest['id'], 'upset_prob': rla.upset_prob}]
+    
+        reported_choices = {k: 0 for k in all_contestant_names}
+        for d in contest_result['results']:
+            # TODO: This isn't the right way to do this. We need to guarantee that the sum
+            # of all the reported votes is the total number of ballots. Right now, we're just
+            # fudging the numbers by adding the extra ones to the "undervote" report, but this
+            # is high-priority.
+            reported_choices[d['candidate']] += int(d['proportion'] * audit_state['total_number_of_ballots'])
+    
+        reported_choices["undervote"] += (audit_state['total_number_of_ballots'] - sum(reported_choices.values()))
+    
+        ballot_count = sum(reported_choices.values())
+        reported_results = [ make_result(all_contestants, r) for r in contest_result['results'] ]
+    
+        rla.init(reported_results, ballot_count, reported_choices)
+    
+        # These are, in order:
+        #   - Risk Limit   (note it's: float(param[0]) / 100)
+        #   - Error Inflation Factor
+        #   - Expected 1-vote Overstatement Rate
+        #   - Expected 2-vote Overstatement Rate
+        #   - Expected 1-vote Understatement Rate
+        #   - Expected 2-vote Understatement Rate
+        # These values are taken from the RIWAVE tests:
+        rla.set_parameters([5, 1.03905, 0.001, 0.0001, 0.001, 0.0001])
+    
+        ballots = []
+        for interpretation in audit_state['all_interpretations']:
+            ballot = WAVEelection.Ballot()
+            ballot.set_actual_value(all_contestants[interpretation['contests'][contest['id']]])
+            # TODO: this is one way to do the ballot number but it might not be (probably isn't) the best:
+            matching_cvr = audit_state['cvrs'][interpretation['ballot_id']]
+            ballot.set_reported_value(all_contestants[matching_cvr[contest['title']]])
+            ballots.append(ballot)
+    
+    
+        rla.recompute(ballots, reported_results)
+    
+        contest_outcomes.append({'status': rla.get_status(), 'progress': rla.get_progress(), 'contest_id': contest['id'], 'upset_prob': rla.upset_prob})
     return(jsonify({'outcomes': contest_outcomes}))
 
 
