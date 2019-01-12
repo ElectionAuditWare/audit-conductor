@@ -304,9 +304,6 @@ function ballotNumToLocation(fullManifest, ballotNum) {
 
          return s
 
-
-
-
       } else {
          n = n - manifest[0]['num_sheets'];
          manifest.shift();
@@ -457,21 +454,25 @@ function addBallot(ballot_id) {
 }
 
 function displayAuditStatus(andThen) {
+      var finalResultContainer = newElem('div');
+      var progressBar = document.createTextNode('Computing audit status...')
+      finalResultContainer.appendChild(progressBar);
+      finalResultContainer.classList.add('container');
+      document.body.appendChild(finalResultContainer);
+
       $.ajax({
          url: '/get-audit-status',
          method: 'POST',
          data: JSON.stringify({}),
          contentType: 'application/json'
       }).done(function(msg) {
-         var finalResultContainer = newElem('div');
-         finalResultContainer.classList.add('container');
+         finalResultContainer.removeChild(progressBar);
          finalResultContainer.innerHTML = 'Audit status:';
          msg['outcomes'].forEach(function(outcome) {
             finalResultContainer.innerHTML += '<p>Contest: <strong>'+outcome['contest_id']+'</strong> Status: <strong>'+outcome['status']+'</strong> ('+outcome.progress+')</p>';
          });
          finalResultContainer.innerHTML += '<br /><br /><a href="/reset">Reset and audit another contest</a>';
          finalResultContainer.style.display = 'block';
-         document.body.appendChild(finalResultContainer);
          window.scrollTo(0,document.body.scrollHeight); // scroll to the bottom
          andThen();
       }).fail(reportError);
