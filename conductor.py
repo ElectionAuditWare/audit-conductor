@@ -360,6 +360,8 @@ def set_seed():
       # TODO: un-hardcode these values (or set them to the 'real' hardcoded ones):
       # TODO: can someone double-check values of 'a' and 'b'
       [], audit_state['ballot_ids'] = sampler.generate_outputs(seed=audit_state['seed'], with_replacement=False, n=number_of_ballots_to_interpret,a=1,b=audit_state['total_number_of_ballots'],skip=0)
+      # At least in RI we will be running them in sorted order:
+      audit_state['ballot_ids'] = sorted(audit_state['ballot_ids'])
       return jsonify({'ballot_ids': audit_state['ballot_ids']}) # TODO: do we want to return anything here?
    else:
       return 'Key "seed" is not present', 422

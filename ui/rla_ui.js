@@ -383,14 +383,14 @@ function displaySeed() {
          var ballotOl, ballotsToInspect;
          ballotsToInspect = conductorState['ballot_ids'];
 
-         ballotOl = buildOrderedList(ballotsToInspect);
 
          seedContainer.innerHTML = 'Seed: <strong>'+conductorState['seed']+'</strong>';
          seedContainer.classList.add('complete');
          ballotListDiv.style.display = 'block';
          
-         ballotListDiv.appendChild(document.createTextNode('Ballot order:'));
-         ballotListDiv.appendChild(ballotOl);
+         // ballotListDiv.appendChild(document.createTextNode('Ballot order:'));
+         // ballotOl = buildOrderedList(ballotsToInspect);
+         // ballotListDiv.appendChild(ballotOl);
          
          ballotListDiv.appendChild(document.createTextNode('Sorted order:'));
          // '.slice' is so we can have a non-destructive sort:
