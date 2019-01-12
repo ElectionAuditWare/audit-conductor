@@ -569,6 +569,14 @@ function candidateSelectionList(interpretationJSON) {
    return buildOrderedList(resultList);
 };
 
+function prettifyChoice(choiceName) {
+   var choiceMap = {
+      'Write-in': 'Write-in candidate',
+      'undervote': 'No selection (undervote)',
+      'overvote': 'Overvote',
+      };
+   return choiceMap[choiceName] || choiceName;
+};
 
 function newRaceCheckbox(ballot_id, race_id, race_title, race_choices) {
    var div, ul;
@@ -580,7 +588,9 @@ function newRaceCheckbox(ballot_id, race_id, race_title, race_choices) {
    ul.setAttribute('style', 'list-style-type: none');
    div.appendChild(ul);
 
-   race_choices.concat(['Write-in candidate', 'No selection (undervote)', 'Overvote']).forEach(function(choice,i) {
+   //race_choices.concat(['Write-in candidate', 'No selection (undervote)', 'Overvote']).forEach(function(choice,i) {
+   race_choices.concat(['Write-in', 'undervote', 'overvote']).forEach(function(choice,i) {
+   //race_choices.forEach(function(choice,i) {
       var checkbox,label,li;
       checkbox = newElem('input');
       checkbox.type = 'radio'; // 'checkbox';
@@ -592,7 +602,7 @@ function newRaceCheckbox(ballot_id, race_id, race_title, race_choices) {
       checkbox.value = choice;
 
       label = newElem('label');
-      label.innerHTML = choice; // again, careful!
+      label.innerHTML = prettifyChoice(choice); // again, careful!
       label.setAttribute('for', checkbox.id);
       label.classList.add('choiceCheckboxLabel');
 

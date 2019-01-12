@@ -49,6 +49,9 @@ Interpretation = Dict[str, List[Dict[str, str]]]
 # Do we need this, or do we just need the seed?:
 #   (Is it repetitive to track this?)
 
+def add_non_candidate_choices(l):
+    return l + ["overvote", "undervote", "Write-in"]
+
 # In the future, we can have more than one of these running concurrently:
 # Maybe a named tuple instead?:
 default_audit_state = {
