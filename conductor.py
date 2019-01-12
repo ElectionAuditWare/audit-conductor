@@ -105,19 +105,19 @@ default_audit_state = {
        {'contest_id': 'lieutenant_governor',
         'results': [
           {'candidate': 'DEM Daniel J. McKee',
-           'percentage': 0.9,
+           'proportion': 0.9,
            'votes': 90, # TODO: these don't add up to total count -- matters?
           },
           {'candidate': 'REP Paul E. Pence',
-           'percentage': 0.04,
+           'proportion': 0.04,
            'votes': 4,
           },
           {'candidate': 'MOD Joel J. Hellmann',
-           'percentage': 0.04,
+           'proportion': 0.04,
            'votes': 4,
           },
           {'candidate': 'Ind Jonathan J. Riccitelli',
-           'percentage': 0.02,
+           'proportion': 0.02,
            'votes': 2
           },
           ]
@@ -126,11 +126,11 @@ default_audit_state = {
        {'contest_id': 'senator',
         'results': [
            {'candidate': 'DEM Sheldon Whitehouse',
-            'percentage': 0.7,
+            'proportion': 0.7,
             'votes': 70,
            },
            {'candidate': 'REP Robert G. Flanders, Jr.',
-            'percentage': 0.3,
+            'proportion': 0.3,
             'votes': 30,
            },
            ],
@@ -138,11 +138,11 @@ default_audit_state = {
        {'contest_id': 'governor',
         'results': [
            {'candidate': 'DEM Gina M. Raimondo',
-            'percentage': 0.55,
+            'proportion': 0.55,
             'votes': 55,
            },
            {'candidate': 'REP Allan W. Fung',
-            'percentage': 0.45,
+            'proportion': 0.45,
             'votes': 45,
            },
            ]
@@ -152,11 +152,11 @@ default_audit_state = {
        ]
 
 #      {'candidate': 'DEM David N. Cicilline (13215)',
-#       'percentage': 0.9, # 0.6,
+#       'proportion': 0.9, # 0.6,
 #       'votes': 90,
 #      },
 #      {'candidate': 'REP Patrick J. Donovan',
-#       'percentage': 0.1, # 0.4,
+#       'proportion': 0.1, # 0.4,
 #       'votes': 10,
 #      },
 #      ],
@@ -190,7 +190,7 @@ def make_result(all_contestants, result_dict):
     # TODO: we construct these candidates here. Make sure there are
     #   no issues with pointer equality from creating them twice:
     contestant = all_contestants[result_dict['candidate']]
-    return WAVEelection.Result(contestant=contestant, percentage=result_dict['percentage'], votes=result_dict['votes'])
+    return WAVEelection.Result(contestant=contestant, percentage=result_dict['proportion'], votes=result_dict['votes'])
 
 def make_ballot(all_contestants, interpretation, contest_id):
     ballot = WAVEelection.Ballot()
