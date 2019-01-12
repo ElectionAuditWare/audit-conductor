@@ -253,7 +253,7 @@ function uploadBallotManifest() {
                mainLoop();
             });
          },
-      });
+      }).fail(reportError);
    });
 }
 
@@ -305,7 +305,7 @@ function uploadCVRFile() {
                mainLoop();
             });
          },
-      });
+      }).fail(reportError);
    });
 
 }
