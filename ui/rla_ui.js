@@ -265,6 +265,11 @@ function displayBallotManifest () {
    uiState['got_ballot_manifest'] = true;
 }
 
+// https://stackoverflow.com/questions/9716468/pure-javascript-a-function-like-jquerys-isnumeric
+function isNumeric(n) {
+  return !isNaN(parseFloat(n)) && isFinite(n);
+}
+
 // TODO: WRITE TESTS FOR THIS FUNCTION!:
 // Particularly edge cases like first and last of a batch etc:
 function ballotNumToLocation(fullManifest, ballotNum) {
@@ -273,10 +278,35 @@ function ballotNumToLocation(fullManifest, ballotNum) {
    manifest = fullManifest.slice(); // copy-by-value so we can '.shift()'
    finished = false;
    do {
+      var row = manifest[0]
       // TODO: test it's not an empty list:
-      if (n <= manifest[0]['num_sheets']) {
+      if (n <= row['num_sheets']) {
          finished = true; // needed?
-         return 'Batch ID: '+manifest[0]['batch_id']+', imprinted ID: '+(manifest[0]['first_imprinted_id']+n);
+         var s = 'Batch ID: '+ row['batch_id'];
+         s += ', batch number: ' + n; // TODO: more descriptive?
+         if (isNumeric(row['first_imprinted_id'])) {
+            s += ', imprinted ID: '+(row['first_imprinted_id']+n);
+         };
+         if (row['municipality'] != '') {
+            // s += ', municipality: ' + row['municipality'];
+            // to save space:
+            s += ', ' + row['municipality'];
+         };
+         if (row['precinct_num'] != '') {
+            s += ', precinct ' + row['precinct_num'];
+         };
+         if (row['box_letter'] != '') {
+            s += ', box letter: ' + row['box_letter'];
+         };
+         if (row['folder_num'] != '') {
+            s += ', folder ' + row['folder_num'];
+         };
+
+         return s
+
+
+
+
       } else {
          n = n - manifest[0]['num_sheets'];
          manifest.shift();

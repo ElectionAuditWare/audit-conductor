@@ -390,6 +390,23 @@ def get_audit_status():
     print(x)
     return x
 
+def make_manifest_row(r):
+    d = {
+        'batch_id': r['Batch ID'],
+        'num_sheets': int(r['# of Sheets']),
+
+        'first_imprinted_id': r['First Imprinted ID'],
+        'last_imprinted_id': r['Last Imprinted ID'],
+        'municipality': r['Municipality'],
+        'precinct_num': r['Precinct Number'],
+        'box_letter': r['Box Letter'],
+        'folder_num': r['Folder Number'],
+        }
+    if d['first_imprinted_id'].isdigit():
+        d['first_imprinted_id'] = int(d['first_imprinted_id'])
+    if d['last_imprinted_id'].isdigit():
+        d['last_imprinted_id'] = int(d['last_imprinted_id'])
+    return d
 
 @app.route('/upload-ballot-manifest', methods=['POST'])
 def upload_ballot_manifest():
@@ -407,7 +424,7 @@ def upload_ballot_manifest():
         file.save(filename)
         with open(filename, newline='') as csvfile:
             reader = csv.DictReader(csvfile)
-            rows = [ {'batch_id': r['Batch ID'], 'num_sheets': int(r['# of Sheets']), 'first_imprinted_id': int(r['First Imprinted ID'])} for r in reader ]
+            rows = [ make_manifest_row(r) for r in reader ]
             global audit_state
             audit_state['total_number_of_ballots'] = sum([ r['num_sheets'] for r in rows ])
             audit_state['ballot_manifest'] = rows
