@@ -52,6 +52,12 @@ Interpretation = Dict[str, List[Dict[str, str]]]
 def add_non_candidate_choices(l):
     return l + ["overvote", "undervote", "Write-in"]
 
+# CONFIGURATION STATE
+
+# Usually you'd run the audit until a stopping condition, but for the pilot
+#   we're fixing the fixing the number of ballots to interpret:
+number_of_ballots_to_interpret = 6
+
 # In the future, we can have more than one of these running concurrently:
 # Maybe a named tuple instead?:
 default_audit_state = {
@@ -353,7 +359,7 @@ def set_seed():
 
       # TODO: un-hardcode these values (or set them to the 'real' hardcoded ones):
       # TODO: can someone double-check values of 'a' and 'b'
-      [], audit_state['ballot_ids'] = sampler.generate_outputs(seed=audit_state['seed'], with_replacement=False, n=6,a=1,b=audit_state['total_number_of_ballots'],skip=0)
+      [], audit_state['ballot_ids'] = sampler.generate_outputs(seed=audit_state['seed'], with_replacement=False, n=number_of_ballots_to_interpret,a=1,b=audit_state['total_number_of_ballots'],skip=0)
       return jsonify({'ballot_ids': audit_state['ballot_ids']}) # TODO: do we want to return anything here?
    else:
       return 'Key "seed" is not present', 422
