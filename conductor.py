@@ -63,7 +63,373 @@ def add_non_candidate_choices(l):
 #   we're fixing the fixing the number of ballots to interpret:
 number_of_ballots_to_interpret = 6
 
-# In the future, we can have more than one of these running concurrently:
+
+
+## Portsmouth ballot polling audit
+
+all_contests_portsmouth = [
+
+      {'id': 'governor',
+       'title': 'Governor',
+       'candidates': ['DEM Gina M. Raimondo', 'MOD William H. Gilbert', 'REP Allan W. Fung',
+					  'Com Anne Armstrong', 'Ind Luis Daniel Munoz', 'Ind Joseph A. Trillo'],
+      },
+      ]
+
+   # total_main_ballots_cast = 7963  ## this could come from manifest
+   
+   # overvotes and undervotes are unknown, although they appear to total 67
+reported_results_portsmouth = [
+       {'contest_id': 'governor',
+        'results': [
+          {'candidate': 'DEM Gina M. Raimondo',
+           'proportion': 0.5607,
+           'votes': 4427 # TODO: these don't add up to total count -- matters?
+          },
+          {'candidate': 'MOD William H. Gilbert',
+           'proportion': 0.0265,
+           'votes': 209
+          },
+          {'candidate': 'REP Allan W. Fung',
+           'proportion': 0.3387,
+           'votes': 2674
+          },
+          {'candidate': 'Com Anne Armstrong',
+           'proportion': 0.0111,
+           'votes': 88
+          },
+          {'candidate': 'Ind Luis Daniel Munoz',
+           'proportion': 0.0129,
+           'votes': 102
+          },
+          {'candidate': 'Ind Joseph A. Trillo',
+           'proportion': 0.0477,
+           'votes': 377
+          },
+          {'candidate': 'Write-in',
+           'proportion': 0.0024,
+           'votes': 19
+          }
+          ]
+       }
+   ]
+	   
+# Bristol ballot-level comparison audit: all federal/statewide
+# contests and candidates are in the order of appearance on the ballot
+# (or data entry screen)
+
+all_contests_bristol = [
+
+      {'id': 'senator',
+       'title': 'Senator in Congress',
+       'candidates': ['DEM Sheldon Whitehouse', 'REP Robert G. Flanders Jr.'],
+      },
+	  {'id': 'rep_1',
+       'title': 'Representative in Congress District 1 (13213)',
+       'candidates': ['DEM David N. Cicilline (13215)', 'REP Patrick J. Donovan'],
+      },
+	  {'id': 'governor',
+       'title': 'Governor',
+       'candidates': ['DEM Gina M. Raimondo', 'MOD William H. Gilbert', 'REP Allan W. Fung',
+					  'Com Anne Armstrong', 'Ind Luis Daniel Munoz', 'Ind Joseph A. Trillo'],
+      },
+	  {'id': 'lieutenant_governor',
+       'title': 'Lieutenant Governor',
+       'candidates': ['DEM Daniel J. McKee', 'MOD Joel J. Hellmann', 'REP Paul E. Pence', 
+	                  'Ind Jonathan J. Riccitelli', 'Ind Ross K. McCurdy'],
+      },
+	  {'id': 'secretary_of_state',
+       'title': 'Secretary of State',
+       'candidates': ['DEM Nellie M. Gorbea', 'REP Pat V. Cortellessa'],
+      },
+	  {'id': 'attorney_general',
+       'title': 'Attorney General',
+       'candidates': ['DEM Peter F. Neronha', 'Com Alan Gordon'],
+      },
+	  {'id': 'treasurer',
+       'title': 'General Treasurer',
+       'candidates': ['DEM Seth Magaziner', 'REP Michael G. Riley'],
+      },
+	  {'id': 'issue_1',
+       'title': '1. RHODE ISLAND SCHOOL BUILDINGS - $250,000,000',
+       'candidates': ['Approve', 'Reject'],
+      },
+	  {'id': 'issue_2',
+       'title': '2. HIGHER EDUCATION FACILITIES - $70,000,000',
+       'candidates': ['Approve', 'Reject'],
+      },
+	  {'id': 'issue_3',
+       'title': '3. GREEN ECONOMY AND CLEAN WATER - $47,300,000',
+       'candidates': ['Approve', 'Reject'],
+      },
+	  
+	  
+	  
+      ]
+
+   # 'main_contest_id': 'issue_2', 
+
+   #ballots_cast_for_main_apparent_winner = 
+   # total_main_ballots_cast = 9021
+reported_results_bristol = [
+      {'contest_id': 'senator',
+        'results': [
+          {'candidate': 'DEM Sheldon Whitehouse',
+           'proportion': 0.595, # shouldn't be needed at all
+           'votes': 5367
+          },
+          {'candidate': 'REP Robert G. Flanders Jr.',
+           'proportion': 0.389,
+           'votes': 3506
+          },
+          {'candidate': 'Write-in',
+           'proportion': 0.002,
+           'votes': 19
+          },
+          {'candidate': 'undervote',
+           'proportion': 0.014,
+           'votes': 127
+          },
+          {'candidate': 'overvote',
+           'proportion': 0.0002,
+           'votes': 2
+          }
+          ]},
+		  
+      {'contest_id': 'rep_1',
+        'results': [
+          {'candidate': 'DEM David N. Cicilline (13215)',
+           'proportion': 0.601, 
+           'votes': 5424
+          },
+          {'candidate': 'REP Patrick J. Donovan',
+           'proportion': 0.379,
+           'votes': 3417
+          },
+          {'candidate': 'Write-in',
+           'proportion': 0.001,
+           'votes': 13
+          },
+          {'candidate': 'undervote',
+           'proportion': 0.018,
+           'votes': 166
+          },
+          {'candidate': 'overvote',
+           'proportion': 0.0001,
+           'votes': 1
+          }
+          ]},
+		  
+       
+      {'contest_id': 'governor',
+        'results': [
+          {'candidate': 'DEM Gina M. Raimondo',
+           'proportion': 0.526,
+           'votes': 4749
+          },
+          {'candidate': 'MOD William H. Gilbert',
+           'proportion': 0.028,
+           'votes': 256
+          },
+          {'candidate': 'REP Allan W. Fung',
+           'proportion': 0.343,
+           'votes': 3094
+          },
+          {'candidate': 'Com Anne Armstrong',
+           'proportion': 0.011,
+           'votes': 103
+          },
+          {'candidate': 'Ind Luis Daniel Munoz',
+           'proportion': 0.014,
+           'votes': 123
+          },
+          {'candidate': 'Ind Joseph A. Trillo',
+           'proportion': 0.056,
+           'votes': 509
+          },
+          {'candidate': 'Write-in',
+           'proportion': 0.004,
+           'votes': 32
+          },
+		  {'candidate': 'undervote',
+           'proportion': 0.016,
+           'votes': 143
+          },
+          {'candidate': 'overvote',
+           'proportion': 0.001,
+           'votes': 12
+          }          
+          ]},
+
+      {'contest_id': 'lieutenant_governor',
+        'results': [
+          {'candidate': 'DEM Daniel J. McKee',
+           'proportion': 0.575,
+           'votes': 5184
+          },
+          {'candidate': 'MOD Joel J. Hellmann',
+           'proportion': 0.032,
+           'votes': 291
+          },
+          {'candidate': 'REP Paul E. Pence',
+           'proportion': 0.273,
+           'votes': 2464
+          },
+          {'candidate': 'Ind Jonathan J. Riccitelli',
+           'proportion': 0.028,
+           'votes': 251
+          },
+          {'candidate': 'Ind Ross K. McCurdy',
+           'proportion': 0.022,
+           'votes': 202
+          },
+          {'candidate': 'Write-in',
+           'proportion': 0.015,
+           'votes': 137
+          },
+		  {'candidate': 'undervote',
+           'proportion': 0.054,
+           'votes': 490
+          },
+          {'candidate': 'overvote',
+           'proportion': 0.0002,
+           'votes': 2
+          }          
+          ]},
+
+      {'contest_id': 'secretary_of_state',
+        'results': [
+          {'candidate': 'DEM Nellie M. Gorbea',
+           'proportion': 0.651, 
+           'votes': 5873
+          },
+          {'candidate': 'REP Pat V. Cortellessa',
+           'proportion': 0.306,
+           'votes': 2757
+          },
+          {'candidate': 'Write-in',
+           'proportion': 0.001,
+           'votes': 10
+          },
+          {'candidate': 'undervote',
+           'proportion': 0.042,
+           'votes': 381
+          },
+          {'candidate': 'overvote',
+           'proportion': 0.0,
+           'votes': 0
+          }
+          ]},
+		  
+      {'contest_id': 'attorney_general',
+        'results': [
+          {'candidate': 'DEM Peter F. Neronha',
+           'proportion': 0.727, 
+           'votes': 6560
+          },
+          {'candidate': 'Com Alan Gordon',
+           'proportion': 0.163,
+           'votes': 1468
+          },
+          {'candidate': 'Write-in',
+           'proportion': 0.006,
+           'votes': 51
+          },
+          {'candidate': 'undervote',
+           'proportion': 0.104,
+           'votes': 941
+          },
+          {'candidate': 'overvote',
+           'proportion': 0.0001,
+           'votes': 1
+          }
+          ]},
+
+      {'contest_id': 'treasurer',
+        'results': [
+          {'candidate': 'DEM Seth Magaziner',
+           'proportion': 0.658, 
+           'votes': 5932
+          },
+          {'candidate': 'REP Michael G. Riley',
+           'proportion': 0.305,
+           'votes': 2751
+          },
+          {'candidate': 'Write-in',
+           'proportion': 0.008,
+           'votes': 7
+          },
+          {'candidate': 'undervote',
+           'proportion': 0.037,
+           'votes': 330
+          },
+          {'candidate': 'overvote',
+           'proportion': 0.0001,
+           'votes': 1
+          }
+          ]},
+		
+      {'contest_id': 'issue_1',
+        'results': [
+          {'candidate': 'Approve',
+           'proportion': 0.724, 
+           'votes': 6534
+          },
+          {'candidate': 'Reject',
+           'proportion': 0.225,
+           'votes': 2027
+          },
+          {'candidate': 'undervote',
+           'proportion': 0.051,
+           'votes': 459
+          },
+          {'candidate': 'overvote',
+           'proportion': 0.0001,
+           'votes': 1
+          }
+          ]},
+
+      {'contest_id': 'issue_2',
+        'results': [
+          {'candidate': 'Approve',
+           'proportion': 0.530, 
+           'votes': 4779
+          },
+          {'candidate': 'Reject',
+           'proportion': 0.411,
+           'votes': 3708
+          },
+          {'candidate': 'undervote',
+           'proportion': 0.059,
+           'votes': 533
+          },
+          {'candidate': 'overvote',
+           'proportion': 0.0001,
+           'votes': 1
+          }
+          ]},		
+
+      {'contest_id': 'issue_3',
+        'results': [
+          {'candidate': 'Approve',
+           'proportion': 0.749, 
+           'votes': 6753
+          },
+          {'candidate': 'Reject',
+           'proportion': 0.197,
+           'votes': 1779
+          },
+          {'candidate': 'undervote',
+           'proportion': 0.054,
+           'votes': 489
+          }
+          ]}		
+		  
+		  
+    ]
+
+
+
 # Maybe a named tuple instead?:
 default_audit_state = {
    # We don't send this whole thing over the wire every time, because it can be huge. Everything else we do:
@@ -84,113 +450,116 @@ default_audit_state = {
    # Hardcoding/configuration, which will come from various CSVs in the future:
    # ("Main" means the one contest we're non-opportunistically auditing):
    # TODO: write-in etc should go here (so we have them in the ballot polling)
-   'all_contests': [
-
-#      {'id': 'congress_district_1',
-#       'title': 'Representative in Congress District 1 (13213)',
-#       'candidates': ['DEM David N. Cicilline (13215)', 'REP Patrick J. Donovan'],
+   'all_contests': None, 
+#       [
+#
+##      {'id': 'congress_district_1',
+##       'title': 'Representative in Congress District 1 (13213)',
+##       'candidates': ['DEM David N. Cicilline (13215)', 'REP Patrick J. Donovan'],
+##      },
+#      {'id': 'lieutenant_governor',
+#       'title': 'Lieutenant Governor',
+#       'candidates': ['DEM Daniel J. McKee', 'REP Paul E. Pence', 'MOD Joel J. Hellmann', 'Ind Jonathan J. Riccitelli'],
 #      },
-      {'id': 'lieutenant_governor',
-       'title': 'Lieutenant Governor',
-       'candidates': ['DEM Daniel J. McKee', 'REP Paul E. Pence', 'MOD Joel J. Hellmann', 'Ind Jonathan J. Riccitelli'],
-      },
-      {'id': 'senator',
-       'title': 'Senator in Congress',
-       'candidates': ['DEM Sheldon Whitehouse', 'REP Robert G. Flanders, Jr.'],
-      },
-      {'id': 'governor',
-       'title': 'Governor',
-       'candidates': ['DEM Gina M. Raimondo', 'REP Allan W. Fung'],
-      },
-      ],
-   'main_contest_id': 'lieutenant_governor', #congress_district_1',
+#      {'id': 'senator',
+#       'title': 'Senator in Congress',
+#       'candidates': ['DEM Sheldon Whitehouse', 'REP Robert G. Flanders, Jr.'],
+#      },
+#      {'id': 'governor',
+#       'title': 'Governor',
+#       'candidates': ['DEM Gina M. Raimondo', 'REP Allan W. Fung'],
+#      },
+#      ],
+   # This'd be for if we're computing one risk limit and opportunistically auditing others. That doesn't apply to the RI pilot:
+   # 'main_contest_id': 'lieutenant_governor', #congress_district_1',
    #ballots_cast_for_main_apparent_winner = 600
    # total_main_ballots_cast = 1000
-   'reported_results': [
-       {'contest_id': 'lieutenant_governor',
-        'results': [
-          {'candidate': 'DEM Daniel J. McKee',
-           'proportion': 0.9,
-           'votes': 90, # TODO: these don't add up to total count -- matters?
-          },
-          {'candidate': 'REP Paul E. Pence',
-           'proportion': 0.04,
-           'votes': 4,
-          },
-          {'candidate': 'MOD Joel J. Hellmann',
-           'proportion': 0.04,
-           'votes': 4,
-          },
-          {'candidate': 'Ind Jonathan J. Riccitelli',
-           'proportion': 0.02,
-           'votes': 2
-          },
-          {'candidate': 'overvote',
-           'proportion': 0,
-           'votes': 0,
-          },
-          {'candidate': 'undervote',
-           'proportion': 0,
-           'votes': 0,
-          },
-          {'candidate': 'Write-in',
-           'proportion': 0,
-           'votes': 0,
-          },
-          ]
-       },
-
-       {'contest_id': 'senator',
-        'results': [
-           {'candidate': 'DEM Sheldon Whitehouse',
-            'proportion': 0.7,
-            'votes': 70,
-           },
-           {'candidate': 'REP Robert G. Flanders, Jr.',
-            'proportion': 0.3,
-            'votes': 30,
-           },
-           {'candidate': 'overvote',
-            'proportion': 0,
-            'votes': 0,
-           },
-           {'candidate': 'undervote',
-            'proportion': 0,
-            'votes': 0,
-           },
-           {'candidate': 'Write-in',
-            'proportion': 0,
-            'votes': 0,
-           },
-           ],
-       },
-       {'contest_id': 'governor',
-        'results': [
-           {'candidate': 'DEM Gina M. Raimondo',
-            'proportion': 0.55,
-            'votes': 55,
-           },
-           {'candidate': 'REP Allan W. Fung',
-            'proportion': 0.45,
-            'votes': 45,
-           },
-           {'candidate': 'overvote',
-            'proportion': 0,
-            'votes': 0,
-           },
-           {'candidate': 'undervote',
-            'proportion': 0,
-            'votes': 0,
-           },
-           {'candidate': 'Write-in',
-            'proportion': 0,
-            'votes': 0,
-           },
-           ]
-       },
-
-
-       ]
+   'reported_results': None,
+#       [
+#       {'contest_id': 'lieutenant_governor',
+#        'results': [
+#          {'candidate': 'DEM Daniel J. McKee',
+#           'proportion': 0.9,
+#           'votes': 90, # TODO: these don't add up to total count -- matters?
+#          },
+#          {'candidate': 'REP Paul E. Pence',
+#           'proportion': 0.04,
+#           'votes': 4,
+#          },
+#          {'candidate': 'MOD Joel J. Hellmann',
+#           'proportion': 0.04,
+#           'votes': 4,
+#          },
+#          {'candidate': 'Ind Jonathan J. Riccitelli',
+#           'proportion': 0.02,
+#           'votes': 2
+#          },
+#          {'candidate': 'overvote',
+#           'proportion': 0,
+#           'votes': 0,
+#          },
+#          {'candidate': 'undervote',
+#           'proportion': 0,
+#           'votes': 0,
+#          },
+#          {'candidate': 'Write-in',
+#           'proportion': 0,
+#           'votes': 0,
+#          },
+#          ]
+#       },
+#
+#       {'contest_id': 'senator',
+#        'results': [
+#           {'candidate': 'DEM Sheldon Whitehouse',
+#            'proportion': 0.7,
+#            'votes': 70,
+#           },
+#           {'candidate': 'REP Robert G. Flanders, Jr.',
+#            'proportion': 0.3,
+#            'votes': 30,
+#           },
+#           {'candidate': 'overvote',
+#            'proportion': 0,
+#            'votes': 0,
+#           },
+#           {'candidate': 'undervote',
+#            'proportion': 0,
+#            'votes': 0,
+#           },
+#           {'candidate': 'Write-in',
+#            'proportion': 0,
+#            'votes': 0,
+#           },
+#           ],
+#       },
+#       {'contest_id': 'governor',
+#        'results': [
+#           {'candidate': 'DEM Gina M. Raimondo',
+#            'proportion': 0.55,
+#            'votes': 55,
+#           },
+#           {'candidate': 'REP Allan W. Fung',
+#            'proportion': 0.45,
+#            'votes': 45,
+#           },
+#           {'candidate': 'overvote',
+#            'proportion': 0,
+#            'votes': 0,
+#           },
+#           {'candidate': 'undervote',
+#            'proportion': 0,
+#            'votes': 0,
+#           },
+#           {'candidate': 'Write-in',
+#            'proportion': 0,
+#            'votes': 0,
+#           },
+#           ]
+#       },
+#
+#
+#       ]
 
 #      {'candidate': 'DEM David N. Cicilline (13215)',
 #       'proportion': 0.9, # 0.6,
@@ -339,10 +708,14 @@ audit_types = {
     'ballot_polling': {
         'get_results': get_ballot_polling_results,
         'init': None,
+        'all_contests': all_contests_portsmouth,
+        'reported_results': reported_results_portsmouth,
         },
     'ballot_comparison': {
         'get_results': get_ballot_comparison_results,
         'init': None,
+        'all_contests': all_contests_bristol,
+        'reported_results': reported_results_bristol,
         },
     }
 
@@ -358,6 +731,8 @@ def set_audit_type():
         if data['type'] in audit_types:
             global audit_state
             audit_state['audit_type_name'] = data['type']
+            audit_state['reported_results'] = audit_types[data['type']]['reported_results']
+            audit_state['all_contests'] = audit_types[data['type']]['all_contests']
             t = audit_types[data['type']]
             return ''
         else:
