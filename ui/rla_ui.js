@@ -10,6 +10,12 @@
 
 (function(){
 
+var debugMode = true;
+
+if (debugMode) {
+   alert('Note: running in debug mode!');
+};
+
 var conductorState = {};
 // The UI may be out of sync with the server. For example, you could
 //   hard-refresh your browser window, and then no frontend representations
@@ -34,7 +40,7 @@ var uiState = {
 var auditNameContainer;
 var seedContainer;
 var auditTypeContainer;
-var finalResultContainer;
+// var finalResultContainer;
 var cvrFileUploadContainer;
 var ballotManifestUploadContainer;
 var ballotListDiv; // rename for consistency?
@@ -52,7 +58,7 @@ window.onload = function() {
    auditNameContainer = getById('auditNameContainer');
    seedContainer = getById('seedContainer');
    auditTypeContainer = getById('auditTypeContainer');
-   finalResultContainer = getById('finalResultContainer');
+   //finalResultContainer = getById('finalResultContainer');
    cvrFileUploadContainer = getById('cvrFileUploadContainer');
    ballotManifestUploadContainer = getById('ballotManifestUploadContainer');
    ballotListDiv = getById('listOfBallotsToPull');
@@ -397,32 +403,50 @@ function makeNewBallotOrReturnResultsPrime() {
       return !(conductorState['all_interpretations'].map(function(y) { return y['ballot_id']; }).includes(x));
    });
    if (ballotIdsLeft.length == 0) {
+      displayAuditStatus(function(){});
+   } else {
+
+      if (debugMode) {
+         displayAuditStatus(function() { addBallot(ballotIdsLeft[0]) });
+      } else {
+         addBallot(ballotIdsLeft[0]);
+      }
+
+   }
+}
+
+function addBallot(ballot_id) {
+      var ballotDiv = newBlankBallot(ballot_id);
+
+      ballotDiv.appendChild(newInnerForm(ballot_id));
+      ballotDiv.classList.add('inProgress');
+
+      // We append to body so we can interleave status in debug mode:
+      //ballotEntriesContainer.appendChild(ballotDiv);
+      document.body.appendChild(ballotDiv);
+}
+
+function displayAuditStatus(andThen) {
       $.ajax({
          url: '/get-audit-status',
          method: 'POST',
          data: JSON.stringify({}),
          contentType: 'application/json'
       }).done(function(msg) {
-         finalResultContainer.innerHTML = 'Audit complete!';
+         var finalResultContainer = newElem('div');
+         finalResultContainer.classList.add('container');
+         finalResultContainer.innerHTML = 'Audit status:';
          msg['outcomes'].forEach(function(outcome) {
             finalResultContainer.innerHTML += '<p>Contest: <strong>'+outcome['contest_id']+'</strong> Status: <strong>'+outcome['status']+'</strong> ('+outcome.progress+')</p>';
          });
          finalResultContainer.innerHTML += '<br /><br /><a href="/reset">Reset and audit another contest</a>';
          finalResultContainer.style.display = 'block';
+         document.body.appendChild(finalResultContainer);
          window.scrollTo(0,document.body.scrollHeight); // scroll to the bottom
+         andThen();
       }).fail(reportError);
-   } else {
-      var ballot_id = ballotIdsLeft[0];
-      var ballotDiv = newBlankBallot(ballot_id);
 
-      ballotDiv.appendChild(newInnerForm(ballot_id));
-      ballotDiv.classList.add('inProgress');
-
-      ballotEntriesContainer.appendChild(ballotDiv);
-
-
-   }
-}
+};
 
 // todo: not 'blank': 'newBallotDiv'?:
 function newBlankBallot(ballot_id) {
