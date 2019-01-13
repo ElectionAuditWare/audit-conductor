@@ -283,6 +283,8 @@ function ballotNumToLocation(fullManifest, ballotNum) {
       if (n <= row['num_sheets']) {
          finished = true; // needed?
          var s = 'Batch ID: '+ row['batch_id'];
+         s += ' ballot ' + n;
+/*
          s += ', batch number: ' + n; // TODO: more descriptive?
          if (isNumeric(row['first_imprinted_id'])) {
             s += ', imprinted ID: '+(row['first_imprinted_id']+n);
@@ -301,7 +303,7 @@ function ballotNumToLocation(fullManifest, ballotNum) {
          if (row['folder_num'] != '') {
             s += ', folder ' + row['folder_num'];
          };
-
+*/
          return s
 
       } else {
@@ -487,7 +489,9 @@ function newBlankBallot(ballot_id) {
    numberLabel = newElem('div');
 
    numberLabel.classList.add('numberLabel', 'inProgress');
-   numberLabel.innerText = 'Ballot # '+(conductorState['ballot_ids'].indexOf(ballot_id)+1)+', ID: '+ballot_id+', Location: '+ballotNumToLocation(conductorState['ballot_manifest'], ballot_id); // TODO: 'innerText' may not be cross-browser
+   //numberLabel.innerText = 'Ballot # '+(conductorState['ballot_ids'].indexOf(ballot_id)+1)+', ID: '+ballot_id+', Location: '+ballotNumToLocation(conductorState['ballot_manifest'], ballot_id); // TODO: 'innerText' may not be cross-browser
+   var ballotNum = conductorState['ballot_ids'].indexOf(ballot_id) + 1;
+   numberLabel.innerText = ballotNumToLocation(conductorState['ballot_manifest'], ballot_id) + ' (#'+ballotNum+')'; // TODO: 'innerText' may not be cross-browser
 
    numberLabel.onclick = function(event) {
       // This work in all IEs we need it to?:
