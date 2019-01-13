@@ -644,7 +644,9 @@ def get_ballot_polling_results():
         else:
             # Update reported results, but don't do stats calculations
             bp.update_reported_ballots(results=reported_results, ballots=ballots)
-        contest_outcomes.append({'status': bp.get_status(), 'progress': bp.get_progress(final=final_ballot), 'contest_id': contest['id'], 'upset_prob': bp.upset_prob})
+        status = 'Done' if final_ballot else bp.get_status()
+
+        contest_outcomes.append({'status': status, 'progress': bp.get_progress(final=final_ballot), 'contest_id': contest['id'], 'upset_prob': bp.upset_prob})
 
     return(jsonify({'outcomes': contest_outcomes}))
 
@@ -709,8 +711,9 @@ def get_ballot_comparison_results():
         else:
             # Update reported results, but don't do stats calculations
             rla.update_reported_ballots(ballots=ballots, results=reported_results)
-
-        contest_outcomes.append({'status': rla.get_status(), 'progress': rla.get_progress(final=final_ballot), 'contest_id': contest['id'], 'upset_prob': rla.upset_prob})
+        status = 'Done' if final_ballot else rla.get_status()
+        
+        contest_outcomes.append({'status': status, 'progress': rla.get_progress(final=final_ballot), 'contest_id': contest['id'], 'upset_prob': rla.upset_prob})
 
     return(jsonify({'outcomes': contest_outcomes}))
 
