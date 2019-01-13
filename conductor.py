@@ -637,8 +637,14 @@ def get_ballot_polling_results():
         bp.init(results=reported_results, ballot_count=audit_state['total_number_of_ballots']) # 100)
         bp.set_parameters([1]) # this is a tolerance of 1%
         ballots = [ make_ballot(all_contestants, i, contest_id) for i in audit_state['all_interpretations'] ]
-        bp.recompute(results=reported_results, ballots=ballots)
-        contest_outcomes.append({'status': bp.get_status(), 'progress': bp.get_progress(), 'contest_id': contest['id'], 'upset_prob': bp.upset_prob})
+        final_ballot = len(ballots) >= number_of_ballots_to_interpret
+        print("DEBUG: ballots: %d final ballot: %s" %(len(ballots),final_ballot))
+        if (final_ballot):
+            bp.recompute(results=reported_results, ballots=ballots)
+        else:
+            # Update reported results, but don't do stats calculations
+            bp.update_reported_ballots(results=reported_results, ballots=ballots)
+        contest_outcomes.append({'status': bp.get_status(), 'progress': bp.get_progress(final=final_ballot), 'contest_id': contest['id'], 'upset_prob': bp.upset_prob})
 
     return(jsonify({'outcomes': contest_outcomes}))
 
@@ -696,11 +702,16 @@ def get_ballot_comparison_results():
             matching_cvr = audit_state['cvrs'][interpretation['ballot_id']]
             ballot.set_reported_value(all_contestants[matching_cvr[contest['title']]])
             ballots.append(ballot)
-    
-    
-        rla.recompute(ballots, reported_results)
-    
-        contest_outcomes.append({'status': rla.get_status(), 'progress': rla.get_progress(), 'contest_id': contest['id'], 'upset_prob': rla.upset_prob})
+        final_ballot = len(ballots) >= number_of_ballots_to_interpret
+        print("DEBUG: ballots: %d final ballot: %s" %(len(ballots),final_ballot))
+        if (final_ballot):
+            rla.recompute(ballots, reported_results)
+        else:
+            # Update reported results, but don't do stats calculations
+            rla.update_reported_ballots(ballots=ballots, results=reported_results)
+
+        contest_outcomes.append({'status': rla.get_status(), 'progress': rla.get_progress(final=final_ballot), 'contest_id': contest['id'], 'upset_prob': rla.upset_prob})
+
     return(jsonify({'outcomes': contest_outcomes}))
 
 
