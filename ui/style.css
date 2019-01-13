@@ -2,7 +2,9 @@
 https://civicdesign.org/wp-content/uploads/2016/02/CCD-Elections-Color-Palette-20160331.pdf */
 
 body {
-   background: #dadada;
+   background: #fff;
+   font-family: helvetica, arial, sans-serif;
+   font-size: 1.1em;
 }
 
 .ballot.inProgress {
@@ -16,15 +18,17 @@ body {
 
 .numberLabel {
    border-radius: 0.2em;
-   padding: 0.2em;
+   padding: 0.2em 1em;
 }
 
 .inProgress > .numberLabel {
+   font-size: 1.5em;
    color: white;
    background: #d87d2e;
 }
 
 .complete > .numberLabel {
+   font-size: .9em;
    color: white;
    background: #3f98d3;
 }
@@ -33,7 +37,7 @@ body {
 }
 
 .innerForm {
-   padding: 1em;
+   padding: .5em;
 }
 
 .raceDiv {
@@ -51,9 +55,10 @@ body {
 .container {
    width: 80%;
    margin: auto;
-   padding: 1em;
+   /* padding: 1em 2em; */
+   padding: 0.5em 1.5em;
    border-radius: 1em;
-   margin-bottom: 1em;
+   margin-bottom: .5em;
    background: #f5decb;
 }
 
