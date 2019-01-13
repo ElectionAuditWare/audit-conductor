@@ -646,17 +646,16 @@ function newRaceCheckbox(ballot_id, race_id, race_title, race_choices) {
    ul = newElem('ul');
    ul.setAttribute('style', 'list-style-type: none');
    div.appendChild(ul);
-
-   //race_choices.concat(['Write-in candidate', 'No selection (undervote)', 'Overvote']).forEach(function(choice,i) {
-   race_choices.concat(['Write-in', 'undervote', 'overvote']).forEach(function(choice,i) {
-   //race_choices.forEach(function(choice,i) {
-      var checkbox,label,li;
+   race_choices.concat(['Write-in candidate', 'No selection (undervote)', 'Overvote']).forEach(function(choice,i) {
+      if(!(race_id.includes('issue')&&choice.includes('Write-in'))){
+      //race_choices.forEach(function(choice,i) {
+      var checkbox, label, li;
       checkbox = newElem('input');
       checkbox.type = 'radio'; // 'checkbox';
       checkbox.name = contestCheckboxName(ballot_id, race_id);
       // TODO: better-guarantee that these are unique
       // (Almost definitely not a concern for RI):
-      checkbox.id = ballot_id+'#'+race_id+'#'+race_title+'#'+i;
+      checkbox.id = ballot_id + '#' + race_id + '#' + race_title + '#' + i;
       checkbox.classList.add('choiceCheckbox');
       checkbox.value = choice;
 
@@ -670,6 +669,7 @@ function newRaceCheckbox(ballot_id, race_id, race_title, race_choices) {
       li.appendChild(checkbox);
       li.appendChild(label);
       ul.appendChild(li);
+      }
    });
    return div;
 }
