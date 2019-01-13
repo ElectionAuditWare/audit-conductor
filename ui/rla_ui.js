@@ -24,6 +24,9 @@ var conductorState = {};
 var uiState = {
    'have_displayed_pull_list': false,
 
+   'last_finished_audit_step': null,
+
+/*
    'got_audit_type': false,
    'got_audit_name': false,
    'got_cvr': false,
@@ -31,6 +34,7 @@ var uiState = {
    'got_cvr_file': false,
    'got_seed': false,
    'created_finished_ballots': false,
+*/
 
    'interpretation_to_confirm': null,
    };
@@ -90,16 +94,41 @@ function getConductorState(andThen) {
    }).fail(reportError);
 }
 
-function mainLoop() {
+var auditSteps = {
+      'ballot_polling': [
+            maybeGetAuditName,
+            maybeGetBallotManifest,
+            maybeGetSeed,
+            createFinishedBallots,
+            makeNewBallotOrReturnResults,
+         ],
+      'ballot_comparison': [
+            maybeGetAuditName,
+            maybeGetBallotManifest,
+            maybeGetCVRFile,
+            maybeGetSeed,
+            createFinishedBallots,
+            makeNewBallotOrReturnResults,
+         ],
+   };
+
+function maybeGetAuditType(andThen) {
    if ( ! uiState['got_audit_type']) {
       var auditType = conductorState['audit_type_name'];
       if (auditType === null) {
          chooseAuditType();
       } else {
          displayAuditType();
-         mainLoop();
+         //mainLoop();
+         andThen();
       }
-   } else if ( ! uiState['got_audit_name']) {
+   } else {
+      andThen();
+   }
+};
+
+function maybeGetAuditName() {
+   //if ( ! uiState['got_audit_name']) {
       var auditName = conductorState['audit_name'];
       if (auditName === null) {
          enterAuditName();
@@ -107,34 +136,53 @@ function mainLoop() {
          displayAuditName();
          mainLoop();
       }
-   } else if ( ! uiState['got_ballot_manifest'] ) {
+   //}
+};
+
+function maybeGetBallotManifest() {
+   //if ( ! uiState['got_ballot_manifest'] ) {
       if (conductorState['ballot_manifest'] === null) {
          uploadBallotManifest(); // TODO: when?
       } else {
          displayBallotManifest();
          mainLoop();
       }
+   //}
+};
 
-   } else if ((conductorState['audit_type_name'] == 'ballot_comparison') && ( ! uiState['got_cvr_file'] )) {
+function maybeGetCVRFile() {
+   //if ((conductorState['audit_type_name'] == 'ballot_comparison') && ( ! uiState['got_cvr_file'] )) {
       if (conductorState['cvr_hash'] === null) {
          uploadCVRFile();
       } else {
          displayCVRFile();
          mainLoop();
       }
-   } else if ( ! uiState['got_seed'] ) {
+   //}
+};
+
+function maybeGetSeed() {
+   //if ( ! uiState['got_seed'] ) {
       if (conductorState['seed'] === null) {
          enterSeed();
       } else {
          displaySeed();
          mainLoop();
       }
-   } else if ( ! uiState['created_finished_ballots'] ) {
-      createFinishedBallots()
-   } else { // TODO
-     // Now we can start inputting interpretations:
-     makeNewBallotOrReturnResults();
-   }
+   //}
+};
+
+
+function mainLoop() {
+   maybeGetAuditType(function() {
+      var steps = auditSteps[conductorState['audit_type_name']];
+      if (uiState['last_finished_audit_step'] < (steps.length - 1)) {
+         uiState['last_finished_audit_step']++; // Technically not 'finished' here
+         steps[uiState['last_finished_audit_step']]();
+         // For now they each call it themselves (seems more flexible):
+         // mainLoop();
+      };
+   });
 }
 
 function auditTypePrettyName(realName) {
@@ -193,7 +241,7 @@ function displayAuditType() { // typeChoice) {
    auditTypeContainer.innerHTML = 'Audit type: <strong>' + auditTypePrettyName(typeChoice) + '</strong>';
    auditTypeContainer.classList.add('complete');
 
-   uiState['got_audit_type'] = true;
+   //uiState['got_audit_type'] = true;
 }
 
 
@@ -224,7 +272,7 @@ function displayAuditName() {
    auditNameContainer.style.display = 'block';
    auditNameContainer.innerHTML = 'Audit name: <strong>' + conductorState['audit_name'] + '</strong>';
    auditNameContainer.classList.add('complete');
-   uiState['got_audit_name'] = true;
+   //uiState['got_audit_name'] = true;
 }
 
 function uploadBallotManifest() {
@@ -262,7 +310,7 @@ function displayBallotManifest () {
    ballotManifestUploadContainer.innerHTML = '(Ballot Manifest Added)';
    ballotManifestUploadContainer.classList.add('complete');
 
-   uiState['got_ballot_manifest'] = true;
+   //uiState['got_ballot_manifest'] = true;
 }
 
 // https://stackoverflow.com/questions/9716468/pure-javascript-a-function-like-jquerys-isnumeric
@@ -344,7 +392,7 @@ function displayCVRFile() {
    cvrFileUploadContainer.innerHTML = '(CVR file uploaded)';
    cvrFileUploadContainer.classList.add('complete');
 
-   uiState['got_cvr_file'] = true;
+   //uiState['got_cvr_file'] = true;
 };
 
 function enterSeed() {
@@ -402,7 +450,7 @@ function displaySeed() {
          a.appendChild(pullSheetText);
          ballotListDiv.appendChild(a);
 
-         uiState['got_seed'] = true;
+         //uiState['got_seed'] = true;
 }
 
 function buildOrderedList(elems) {
@@ -453,6 +501,7 @@ function addBallot(ballot_id) {
       // We append to body so we can interleave status in debug mode:
       //ballotEntriesContainer.appendChild(ballotDiv);
       document.body.appendChild(ballotDiv);
+      scrollToTheBottom();
 }
 
 function displayAuditStatus(andThen) {
@@ -461,6 +510,7 @@ function displayAuditStatus(andThen) {
       finalResultContainer.appendChild(progressBar);
       finalResultContainer.classList.add('container');
       document.body.appendChild(finalResultContainer);
+      scrollToTheBottom();
 
       $.ajax({
          url: '/get-audit-status',
@@ -480,10 +530,15 @@ function displayAuditStatus(andThen) {
          });
          finalResultContainer.innerHTML += '<br /><br /><a href="/reset">Reset and audit another contest</a>';
          finalResultContainer.style.display = 'block';
-         window.scrollTo(0,document.body.scrollHeight); // scroll to the bottom
+         scrollToTheBottom();
          andThen();
       }).fail(reportError);
 
+};
+
+
+function scrollToTheBottom() {
+   window.scrollTo(0,document.body.scrollHeight);
 };
 
 // todo: not 'blank': 'newBallotDiv'?:
@@ -538,7 +593,7 @@ function createFinishedBallots() {
 
       ballotEntriesContainer.appendChild(ballotDiv);
    });
-   uiState['created_finished_ballots'] = true;
+   //uiState['created_finished_ballots'] = true;
    mainLoop();
 };
 
