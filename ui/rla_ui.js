@@ -13,7 +13,7 @@
 var debugMode = true;
 
 if (debugMode) {
-   alert('Note: running in debug mode!');
+   //alert('Note: running in debug mode!');
 };
 
 var conductorState = {};
@@ -99,6 +99,7 @@ var auditSteps = {
             maybeGetAuditName,
             maybeGetBallotManifest,
             maybeGetSeed,
+            createButton('Click to enter interpretations'),
             createFinishedBallots,
             makeNewBallotOrReturnResults,
          ],
@@ -107,6 +108,7 @@ var auditSteps = {
             maybeGetBallotManifest,
             maybeGetCVRFile,
             maybeGetSeed,
+            createButton('Click to enter interpretations'),
             createFinishedBallots,
             makeNewBallotOrReturnResults,
          ],
@@ -176,11 +178,16 @@ function maybeGetSeed() {
 function mainLoop() {
    maybeGetAuditType(function() {
       var steps = auditSteps[conductorState['audit_type_name']];
-      if (uiState['last_finished_audit_step'] < (steps.length - 1)) {
-         uiState['last_finished_audit_step']++; // Technically not 'finished' here
-         steps[uiState['last_finished_audit_step']]();
-         // For now they each call it themselves (seems more flexible):
-         // mainLoop();
+      if (uiState['last_finished_audit_step'] === null) {
+         uiState['last_finished_audit_step'] = 0;
+         steps[0]();
+      } else {
+         if (uiState['last_finished_audit_step'] < (steps.length - 1)) {
+            uiState['last_finished_audit_step']++; // Technically not 'finished' here
+            steps[uiState['last_finished_audit_step']]();
+            // For now they each call it themselves (seems more flexible):
+            // mainLoop();
+         };
       };
    });
 }
@@ -191,6 +198,23 @@ function auditTypePrettyName(realName) {
       'ballot_comparison': 'Ballot Comparison',
       };
    return prettyNames[realName] || realName;
+};
+
+function createButton(buttonMessage) {
+   return function() {
+      var container = newElem('div');
+      container.classList.add('container');
+      var button = newElem('button');
+      var msg = document.createTextNode(buttonMessage);
+      button.appendChild(msg);
+      container.appendChild(button);
+      button.onclick = function() {
+         // container.parentNode.removeChild(container);
+         container.remove();
+         mainLoop();
+      };
+      document.body.appendChild(container);
+   }
 };
 
 function chooseAuditType() {
@@ -495,6 +519,8 @@ function makeNewBallotOrReturnResultsPrime() {
 function addBallot(ballot_id) {
       var ballotDiv = newBlankBallot(ballot_id);
 
+      timestampEvent({'event': 'add_ballot', 'ballot_id': ballot_id});
+
       ballotDiv.appendChild(newInnerForm(ballot_id));
       ballotDiv.classList.add('inProgress');
 
@@ -616,6 +642,9 @@ function newInnerForm(ballot_id) {
 
    saveButton.onclick = function(event) {
       var dat = {ballot_id: ballot_id, contests: {}};
+
+      timestampEvent({'event': 'click_first_save', 'ballot_id': ballot_id});
+
       conductorState['all_contests'].forEach(function(contest) {
          var x = document.querySelector('input[name="'+contestCheckboxName(ballot_id, contest.id)+'"]:checked').value;
          dat['contests'][contest.id] = x;
@@ -631,6 +660,9 @@ function newInterpretationConfirmation(interpretationJSON) {
    var confirmationDiv = newElem('div');
    var confirmButton = newElem('button');
    var rejectButton = newElem('button');
+
+   var ballot_id = interpretationJSON['ballot_id'];
+
    confirmButton.value = 'Confirm';
    confirmButton.innerHTML = 'Confirm';
    rejectButton.value = 'Reject';
@@ -648,6 +680,7 @@ function newInterpretationConfirmation(interpretationJSON) {
          contentType: 'application/json'
       })
       .done(function(msg){
+         timestampEvent({'event': 'click_final_save', 'ballot_id': ballot_id});
          confirmationDiv.parentNode.classList.replace('inProgress','complete');
          confirmationDiv.style.display = 'none';
          confirmButton.style.display = 'none';
@@ -665,7 +698,8 @@ function newInterpretationConfirmation(interpretationJSON) {
    // Note we don't re-fill the existing radio buttons.
    //   That's intentional, although it could change based on the spec:
    rejectButton.onclick = function() {
-      confirmationDiv.parentNode.appendChild(newInnerForm(interpretationJSON['ballot_id']));
+      timestampEvent({'event': 'click_reject', 'ballot_id': ballot_id});
+      confirmationDiv.parentNode.appendChild(newInnerForm(ballot_id));
       confirmationDiv.parentNode.removeChild(confirmationDiv);
    };
 
@@ -733,6 +767,17 @@ function newRaceCheckbox(ballot_id, race_id, race_title, race_choices) {
    });
    return div;
 }
+
+function timestampEvent(msg) {
+      $.ajax({
+         url: '/timestamp-event',
+         data: JSON.stringify(msg),
+         method: 'POST',
+         contentType: 'application/json'
+      })
+      .done(function(){
+      }).fail(reportError);
+};
 
 function contestCheckboxName(ballot_id, contest_id) {
    return ballot_id+'#'+contest_id; // +'#'+race_title;

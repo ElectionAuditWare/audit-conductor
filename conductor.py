@@ -911,6 +911,14 @@ def upload_cvr():
             audit_state['cvr_hash'] = cvr_hash
             return jsonify({'cvr_hash': cvr_hash})
 
+@app.route('/timestamp-event', methods=['POST'])
+def log_time():
+   j = request.get_json()
+   fname = os.path.join(audit_log_dir, audit_state['audit_name']+'_timestamp-events.txt')
+   with open(fname, 'a') as states_file:
+       states_file.write('\n'+str(tuple((datetime.now().isoformat(), j))))
+   return ''
+
 ### Static files
 @app.route('/jquery.js')
 def jquery():
