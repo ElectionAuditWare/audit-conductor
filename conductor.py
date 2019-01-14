@@ -673,13 +673,9 @@ def get_ballot_comparison_results():
     
         reported_choices = {k: 0 for k in all_contestant_names}
         for d in contest_result['results']:
-            # TODO: This isn't the right way to do this. We need to guarantee that the sum
-            # of all the reported votes is the total number of ballots. Right now, we're just
-            # fudging the numbers by adding the extra ones to the "undervote" report, but this
-            # is high-priority.
-            reported_choices[d['candidate']] += int(d['proportion'] * audit_state['total_number_of_ballots'])
-    
-        reported_choices["undervote"] += (audit_state['total_number_of_ballots'] - sum(reported_choices.values()))
+            reported_choices[d['candidate']] += d['votes']
+        
+        assert(sum(reported_choices.values()) == audit_state['total_number_of_ballots'])
     
         ballot_count = sum(reported_choices.values())
         reported_results = [ make_result(all_contestants, r) for r in contest_result['results'] ]
