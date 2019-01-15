@@ -552,7 +552,7 @@ function displayAuditStatus(andThen) {
                return x['id'] == outcome['contest_id'];
             })[0];
 //OUT
-            finalResultContainer.innerHTML += '<p>Contest: <strong>'+contest['title']+'</strong> Status: <strong>'+outcome['status']+'</strong> ('+outcome.progress+')</p>';
+            finalResultContainer.innerHTML += '<p>Contest: <strong>'+contest['title']+'</strong> Status: <strong>'+outcome['status']+'</strong> <br>'+outcome.progress+'</p>';
          });
          finalResultContainer.innerHTML += '<br /><br /><a href="/reset">Reset and audit another contest</a>';
          finalResultContainer.style.display = 'block';
