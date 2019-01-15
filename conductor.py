@@ -71,8 +71,7 @@ all_contests_portsmouth = [
 
       {'id': 'governor',
        'title': 'Governor',
-       'candidates': ['DEM Gina M. Raimondo', 'MOD William H. Gilbert', 'REP Allan W. Fung',
-					  'Com Anne Armstrong', 'Ind Luis Daniel Munoz', 'Ind Joseph A. Trillo'],
+       'candidates': ['DEM Gina M. Raimondo', 'MOD William H. Gilbert', 'REP Allan W. Fung', 'Com Anne Armstrong', 'Ind Luis Daniel Munoz', 'Ind Joseph A. Trillo'],
       },
       ]
 
@@ -113,7 +112,7 @@ reported_results_portsmouth = [
           ]
        }
    ]
-	   
+   
 # Bristol ballot-level comparison audit: all federal/statewide
 # contests and candidates are in the order of appearance on the ballot
 # (or data entry screen)
@@ -124,47 +123,43 @@ all_contests_bristol = [
        'title': 'Senator in Congress',
        'candidates': ['DEM Sheldon Whitehouse', 'REP Robert G. Flanders Jr.'],
       },
-	  {'id': 'rep_1',
+      {'id': 'rep_1',
        'title': 'Representative in Congress District 1 (13213)',
        'candidates': ['DEM David N. Cicilline (13215)', 'REP Patrick J. Donovan'],
       },
-	  {'id': 'governor',
+      {'id': 'governor',
        'title': 'Governor',
-       'candidates': ['DEM Gina M. Raimondo', 'MOD William H. Gilbert', 'REP Allan W. Fung',
-					  'Com Anne Armstrong', 'Ind Luis Daniel Munoz', 'Ind Joseph A. Trillo'],
+       'candidates': ['DEM Gina M. Raimondo', 'MOD William H. Gilbert', 'REP Allan W. Fung', 'Com Anne Armstrong', 'Ind Luis Daniel Munoz', 'Ind Joseph A. Trillo'],
       },
-	  {'id': 'lieutenant_governor',
+      {'id': 'lieutenant_governor',
        'title': 'Lieutenant Governor',
        'candidates': ['DEM Daniel J. McKee', 'MOD Joel J. Hellmann', 'REP Paul E. Pence', 
-	                  'Ind Jonathan J. Riccitelli', 'Ind Ross K. McCurdy'],
+             'Ind Jonathan J. Riccitelli', 'Ind Ross K. McCurdy'],
       },
-	  {'id': 'secretary_of_state',
+      {'id': 'secretary_of_state',
        'title': 'Secretary of State',
        'candidates': ['DEM Nellie M. Gorbea', 'REP Pat V. Cortellessa'],
       },
-	  {'id': 'attorney_general',
+      {'id': 'attorney_general',
        'title': 'Attorney General',
        'candidates': ['DEM Peter F. Neronha', 'Com Alan Gordon'],
       },
-	  {'id': 'treasurer',
+      {'id': 'treasurer',
        'title': 'General Treasurer',
        'candidates': ['DEM Seth Magaziner', 'REP Michael G. Riley'],
       },
-	  {'id': 'issue_1',
+      {'id': 'issue_1',
        'title': '1. RHODE ISLAND SCHOOL BUILDINGS - $250,000,000',
        'candidates': ['Approve', 'Reject'],
       },
-	  {'id': 'issue_2',
+      {'id': 'issue_2',
        'title': '2. HIGHER EDUCATION FACILITIES - $70,000,000',
        'candidates': ['Approve', 'Reject'],
       },
-	  {'id': 'issue_3',
+      {'id': 'issue_3',
        'title': '3. GREEN ECONOMY AND CLEAN WATER - $47,300,000',
        'candidates': ['Approve', 'Reject'],
       },
-	  
-	  
-	  
       ]
 
    # 'main_contest_id': 'issue_2', 
@@ -195,7 +190,7 @@ reported_results_bristol = [
            'votes': 2
           }
           ]},
-		  
+
       {'contest_id': 'rep_1',
         'results': [
           {'candidate': 'DEM David N. Cicilline (13215)',
@@ -219,7 +214,7 @@ reported_results_bristol = [
            'votes': 1
           }
           ]},
-		  
+
        
       {'contest_id': 'governor',
         'results': [
@@ -251,7 +246,7 @@ reported_results_bristol = [
            'proportion': 0.004,
            'votes': 32
           },
-		  {'candidate': 'undervote',
+          {'candidate': 'undervote',
            'proportion': 0.016,
            'votes': 143
           },
@@ -287,7 +282,7 @@ reported_results_bristol = [
            'proportion': 0.015,
            'votes': 137
           },
-		  {'candidate': 'undervote',
+          {'candidate': 'undervote',
            'proportion': 0.054,
            'votes': 490
           },
@@ -320,7 +315,7 @@ reported_results_bristol = [
            'votes': 0
           }
           ]},
-		  
+  
       {'contest_id': 'attorney_general',
         'results': [
           {'candidate': 'DEM Peter F. Neronha',
@@ -368,7 +363,7 @@ reported_results_bristol = [
            'votes': 1
           }
           ]},
-		
+
       {'contest_id': 'issue_1',
         'results': [
           {'candidate': 'Approve',
@@ -407,7 +402,7 @@ reported_results_bristol = [
            'proportion': 0.0001,
            'votes': 1
           }
-          ]},		
+          ]},
 
       {'contest_id': 'issue_3',
         'results': [
@@ -423,9 +418,7 @@ reported_results_bristol = [
            'proportion': 0.054,
            'votes': 489
           }
-          ]}		
-		  
-		  
+          ]}
     ]
 
 
@@ -434,18 +427,22 @@ reported_results_bristol = [
 default_audit_state = {
    # We don't send this whole thing over the wire every time, because it can be huge. Everything else we do:
    #   (Maybe it shouldn't be in audit_state, then?)
-   'cvrs': None,
 
-   'cvr_hash': None,
-   'all_interpretations': [],
+# 'cvr_files':
+   'cvrs': {}, # None,
+
+# 'cvr_hashes':
+   'cvr_hash': {}, # None,
+   'all_interpretations': {'ballot_polling': [], 'ballot_comparison': []},
    'seed': None,
-   'main_contest_in_progress': None,
+   # 'main_contest_in_progress': None,
    'audit_name': None,
    'audit_type_name': None,
-   'ballot_manifest': None,
+   'ballot_manifest': {}, # None,
    # these next two can be gotten from 'ballot_manifest':
-   'total_number_of_ballots': None,
-   'ballot_ids': None,
+   'total_number_of_ballots': {},
+   'num_ballots_already_sampled': 0,
+   'ballot_ids': {}, # None, # {'ballot_polling': [], 'ballot_comparison': []},
 
    # Hardcoding/configuration, which will come from various CSVs in the future:
    # ("Main" means the one contest we're non-opportunistically auditing):
@@ -626,7 +623,7 @@ def get_ballot_polling_results():
         #   make sure we have all options since there may be ones not
         #   in the contest description (e.g. write-ins, or "no
         #   selection"):
-        all_contestant_names = list(set(contest['candidates']).union({ i['contests'][contest_id] for i in audit_state['all_interpretations']}))
+        all_contestant_names = list(set(contest['candidates']).union({ i['contests'][contest_id] for i in audit_state['all_interpretations']['ballot_polling']}))
         all_contestant_names = add_non_candidate_choices(all_contestant_names)
 
         all_contestants = { name: make_contestant(name) for name in all_contestant_names }
@@ -634,9 +631,9 @@ def get_ballot_polling_results():
         all_contestants['undervote'] = WAVEelection.Undervote()
 
         reported_results = [ make_result(all_contestants, r) for r in contest_result['results'] ]
-        bp.init(results=reported_results, ballot_count=audit_state['total_number_of_ballots']) # 100)
+        bp.init(results=reported_results, ballot_count=audit_state['total_number_of_ballots']['ballot_polling']) # 100)
         bp.set_parameters([1]) # this is a tolerance of 1%
-        ballots = [ make_ballot(all_contestants, i, contest_id) for i in audit_state['all_interpretations'] ]
+        ballots = [ make_ballot(all_contestants, i, contest_id) for i in audit_state['all_interpretations']['ballot_polling'] ]
         final_ballot = len(ballots) >= number_of_ballots_to_interpret
         print("DEBUG: ballots: %d final ballot: %s" %(len(ballots),final_ballot))
         if (final_ballot):
@@ -663,7 +660,7 @@ def get_ballot_comparison_results():
         contest_result = list(filter(lambda c: c['contest_id'] == contest_id, audit_state['reported_results']))[0]
 
     # TODO: also replace these lines with getting directly from CVR (is that the usual way to do it?):
-        all_contestant_names = list(set(contest['candidates']).union({ i['contests'][contest['id']] for i in audit_state['all_interpretations']}))
+        all_contestant_names = list(set(contest['candidates']).union({ i['contests'][contest['id']] for i in audit_state['all_interpretations']['ballot_comparison']}))
         all_contestant_names = add_non_candidate_choices(all_contestant_names)
 
         all_contestants = { name: make_contestant(name) for name in all_contestant_names }
@@ -677,9 +674,9 @@ def get_ballot_comparison_results():
             # of all the reported votes is the total number of ballots. Right now, we're just
             # fudging the numbers by adding the extra ones to the "undervote" report, but this
             # is high-priority.
-            reported_choices[d['candidate']] += int(d['proportion'] * audit_state['total_number_of_ballots'])
+            reported_choices[d['candidate']] += int(d['proportion'] * audit_state['total_number_of_ballots']['ballot_comparison'])
     
-        reported_choices["undervote"] += (audit_state['total_number_of_ballots'] - sum(reported_choices.values()))
+        reported_choices["undervote"] += (audit_state['total_number_of_ballots']['ballot_comparison'] - sum(reported_choices.values()))
     
         ballot_count = sum(reported_choices.values())
         reported_results = [ make_result(all_contestants, r) for r in contest_result['results'] ]
@@ -697,11 +694,11 @@ def get_ballot_comparison_results():
         rla.set_parameters([5, 1.03905, 0.001, 0.0001, 0.001, 0.0001])
     
         ballots = []
-        for interpretation in audit_state['all_interpretations']:
+        for interpretation in audit_state['all_interpretations']['ballot_comparison']:
             ballot = WAVEelection.Ballot()
             ballot.set_actual_value(all_contestants[interpretation['contests'][contest['id']]])
             # TODO: this is one way to do the ballot number but it might not be (probably isn't) the best:
-            matching_cvr = audit_state['cvrs'][interpretation['ballot_id']]
+            matching_cvr = audit_state['cvrs']['ballot_comparison'][interpretation['ballot_id']]
             ballot.set_reported_value(all_contestants[matching_cvr[contest['title']]])
             ballots.append(ballot)
         final_ballot = len(ballots) >= number_of_ballots_to_interpret
@@ -730,6 +727,14 @@ audit_types = {
         'init': None,
         'all_contests': all_contests_bristol,
         'reported_results': reported_results_bristol,
+        },
+    'ri_pilot': {
+        # Instead, we call out to other 'get_results'es:
+        'get_results': None,
+        'init': None,
+        # Calling out again:
+        'all_contests': None,
+        'reported_results': None,
         },
     }
 
@@ -774,7 +779,7 @@ def add():
    app.logger.debug(data)
    if 'interpretation' in data:
       global audit_state
-      audit_state['all_interpretations'].append(data['interpretation'])
+      audit_state['all_interpretations'][data['contest_type']].append(data['interpretation'])
       return ''
    else:
       return 'Key "interpretation" is not present in the request', 422
@@ -803,12 +808,21 @@ def set_seed():
       audit_state['seed'] = j['seed']
 
 
-      # TODO: un-hardcode these values (or set them to the 'real' hardcoded ones):
-      # TODO: can someone double-check values of 'a' and 'b'
-      [], audit_state['ballot_ids'] = sampler.generate_outputs(seed=audit_state['seed'], with_replacement=False, n=number_of_ballots_to_interpret,a=1,b=audit_state['total_number_of_ballots'],skip=0)
-      # At least in RI we will be running them in sorted order:
-      audit_state['ballot_ids'] = sorted(audit_state['ballot_ids'])
-      return jsonify({'ballot_ids': audit_state['ballot_ids']}) # TODO: do we want to return anything here?
+
+      # 'ballot_type' is a misnomer here: TODO:
+      ballot_types = []
+      if audit_state['audit_type_name'] == 'ri_pilot':
+          ballot_types = ['ballot_polling', 'ballot_comparison']
+      else:
+          ballot_types = [audit_state['audit_type_name']]
+
+      for ballot_type in ballot_types:
+
+          [], audit_state['ballot_ids'][ballot_type] = sampler.generate_outputs(seed=audit_state['seed'], with_replacement=False, n=(audit_state['num_ballots_already_sampled']+number_of_ballots_to_interpret),a=(audit_state['num_ballots_already_sampled']+1),b=audit_state['total_number_of_ballots'][ballot_type],skip=0)
+          audit_state['num_ballots_already_sampled'] += number_of_ballots_to_interpret
+          # At least in RI we will be running them in sorted order:
+          audit_state['ballot_ids'][ballot_type] = sorted(audit_state['ballot_ids'][ballot_type])
+      return '' # jsonify({'ballot_ids': audit_state['ballot_ids'][ballot_type]}) # TODO: do we want to return anything here?
    else:
       return 'Key "seed" is not present', 422
 
@@ -817,15 +831,28 @@ def set_seed():
 def get_ballot_ids():
     return jsonify({'ballot_ids': audit_state['ballot_ids']})
 
-@app.route('/ballot-pull-sheet.txt')
-def get_ballot_pull_sheet():
-    s = 'Ballot Pull Sheet\n\n'
-    s += 'Ballot Order:\n'
-    s += '\n'.join([ '{}. {}'.format(i,v) for i, v in enumerate(audit_state['ballot_ids'], 1) ])
-    s += '\n\nSorted Order:\n'
-    s += '\n'.join([ '{}. {}'.format(i,v) for i, v in enumerate(sorted(audit_state['ballot_ids']), 1) ])
-    # TODO: content-type: text/plain
+@app.route('/ballot-pull-sheet-<contest_type>.txt')
+def get_ballot_pull_sheet(contest_type):
+    s = 'ballot_id,batch_id,index_in_batch,imprinted_id'
+    for ballot_id in audit_state['ballot_ids'][contest_type]:
+        s += '\n'+get_pull_sheet_row(contest_type, audit_state['ballot_manifest'][contest_type], ballot_id, ballot_id)
     return Response(s, mimetype='text/plain')
+
+def get_pull_sheet_row(contest_type, manifest_orig, ballot_id, n):
+    # TODO: we're repeatedly copying, which isn't needed
+    manifest = copy.deepcopy(manifest_orig)
+    row = manifest[0]
+    if n <= row['num_sheets']:
+        s = str(ballot_id)
+        s += ','+row['batch_id']
+        s += ','+str(n)
+        s += ','
+        if contest_type in audit_state['cvrs']:
+            s += audit_state['cvrs'][contest_type][ballot_id-1]['Serial Number']
+        return s
+    else:
+        # TODO: make sure you don't hit recursion limit:
+        return get_pull_sheet_row(contest_type, manifest[1:], ballot_id, n - row['num_sheets'])
 
 
 ### "Interpretation handlers"
@@ -863,6 +890,7 @@ def upload_ballot_manifest():
     if 'file' not in request.files:
         return 'File not uploaded', 400
     file = request.files['file']
+    contest_name = request.form['contest_name']
     # "if user does not select file, browser also"
     # "submit an empty part without filename"
     if file.filename == '':
@@ -874,8 +902,8 @@ def upload_ballot_manifest():
             reader = csv.DictReader(csvfile)
             rows = [ make_manifest_row(r) for r in reader ]
             global audit_state
-            audit_state['total_number_of_ballots'] = sum([ r['num_sheets'] for r in rows ])
-            audit_state['ballot_manifest'] = rows
+            audit_state['total_number_of_ballots'][contest_name] = sum([ r['num_sheets'] for r in rows ])
+            audit_state['ballot_manifest'][contest_name] = rows
             # TODO: data integrity checks!
             # both for matching with CVR data (counts etc), and with the counts (first_printed_id adds to num_sheets etc)
             return jsonify(rows) # todo: don't return this?
@@ -892,6 +920,7 @@ def send_reset_page():
 
 @app.route('/upload-cvr-file', methods=['POST'])
 def upload_cvr():
+    contest_name = request.form['contest_name']
     if 'file' not in request.files:
         return 'File not uploaded', 400
     file = request.files['file']
@@ -909,9 +938,9 @@ def upload_cvr():
 
             # TODO: check that the CVR file matches the reported results
 
-            audit_state['cvrs'] = rows
+            audit_state['cvrs'][contest_name] = rows
             cvr_hash = 'test-hash' # TODO
-            audit_state['cvr_hash'] = cvr_hash
+            audit_state['cvr_hash'][contest_name] = cvr_hash
             return jsonify({'cvr_hash': cvr_hash})
 
 @app.route('/timestamp-event', methods=['POST'])

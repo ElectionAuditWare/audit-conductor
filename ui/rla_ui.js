@@ -97,20 +97,39 @@ function getConductorState(andThen) {
 var auditSteps = {
       'ballot_polling': [
             maybeGetAuditName,
-            maybeGetBallotManifest,
+            maybeGetBallotManifest('ballot_polling'),
             maybeGetSeed,
+            displayPullSheet('ballot_polling'),
             createButton('Click to enter interpretations'),
-            createFinishedBallots,
-            makeNewBallotOrReturnResults,
+            createFinishedBallots('ballot_polling'),
+            makeNewBallotOrReturnResults('ballot_polling'),
          ],
       'ballot_comparison': [
             maybeGetAuditName,
-            maybeGetBallotManifest,
-            maybeGetCVRFile,
+            maybeGetBallotManifest('ballot_comparison'),
+            maybeGetCVRFile('ballot_comparison'),
             maybeGetSeed,
+            displayPullSheet('ballot_comparison'),
             createButton('Click to enter interpretations'),
-            createFinishedBallots,
-            makeNewBallotOrReturnResults,
+            createFinishedBallots('ballot_comparison'),
+            makeNewBallotOrReturnResults('ballot_polling'),
+         ],
+      'ri_pilot': [
+            maybeGetAuditName,
+            announce('Ballot Polling (Portsmouth) data entry'),
+            maybeGetBallotManifest('ballot_polling'),
+            announce('Ballot Comparison (Bristol) data entry'),
+            maybeGetBallotManifest('ballot_comparison'),
+            maybeGetCVRFile('ballot_comparison'),
+            maybeGetSeed,
+            displayPullSheet('ballot_polling'),
+            displayPullSheet('ballot_comparison'),
+            createButton('Click to enter Ballot Polling (Portsmouth) interpretations'),
+            createFinishedBallots('ballot_polling'),
+            makeNewBallotOrReturnResults('ballot_polling'),
+            createButton('Click to enter interpretations'),
+            createFinishedBallots('ballot_comparison'),
+            makeNewBallotOrReturnResults('ballot_comparison'),
          ],
    };
 
@@ -129,6 +148,8 @@ function maybeGetAuditType(andThen) {
    }
 };
 
+// These 'maybeGet*' functions are repetitive -- make a helper function for them:
+
 function maybeGetAuditName() {
    //if ( ! uiState['got_audit_name']) {
       var auditName = conductorState['audit_name'];
@@ -141,26 +162,32 @@ function maybeGetAuditName() {
    //}
 };
 
-function maybeGetBallotManifest() {
+function maybeGetBallotManifest(ballotType) {
+   return function () {
    //if ( ! uiState['got_ballot_manifest'] ) {
-      if (conductorState['ballot_manifest'] === null) {
-         uploadBallotManifest(); // TODO: when?
+      // if (conductorState['ballot_manifest'] === null) {
+      if (conductorState['ballot_manifest'][ballotType] === undefined) {
+         uploadBallotManifest(ballotType); // TODO: when?
       } else {
-         displayBallotManifest();
+         displayBallotManifest(ballotType);
          mainLoop();
       }
    //}
+   }
 };
 
-function maybeGetCVRFile() {
+function maybeGetCVRFile(ballotType) {
+   return function () {
    //if ((conductorState['audit_type_name'] == 'ballot_comparison') && ( ! uiState['got_cvr_file'] )) {
-      if (conductorState['cvr_hash'] === null) {
-         uploadCVRFile();
+      //if (conductorState['cvr_hash'] === null) {
+      if (conductorState['cvr_hash'][ballotType] === undefined) {
+         uploadCVRFile(ballotType);
       } else {
-         displayCVRFile();
+         displayCVRFile(ballotType);
          mainLoop();
       }
    //}
+   }
 };
 
 function maybeGetSeed() {
@@ -196,6 +223,7 @@ function auditTypePrettyName(realName) {
    var prettyNames = {
       'ballot_polling': 'Ballot Polling',
       'ballot_comparison': 'Ballot Comparison',
+      'ri_pilot': 'RI 2019 Pilot',
       };
    return prettyNames[realName] || realName;
 };
@@ -214,6 +242,19 @@ function createButton(buttonMessage) {
          mainLoop();
       };
       document.body.appendChild(container);
+   }
+};
+
+
+function announce(announcement) {
+   return function() {
+      console.log('a', announcement);
+      var container = newElem('div');
+      container.classList.add('container');
+      var msg = document.createTextNode(announcement);
+      container.appendChild(msg);
+      document.body.appendChild(container);
+      mainLoop();
    }
 };
 
@@ -299,7 +340,7 @@ function displayAuditName() {
    //uiState['got_audit_name'] = true;
 }
 
-function uploadBallotManifest() {
+function uploadBallotManifest(ballotType) {
 
    ballotManifestUploadContainer.style.display = 'block';
 
@@ -309,6 +350,7 @@ function uploadBallotManifest() {
 
    $(uploadButton).click(function() {
       var form_data = new FormData(uploadForm);
+      form_data.append('contest_name', ballotType);
       $.ajax({
          type: 'POST',
          url: '/upload-ballot-manifest',
@@ -321,7 +363,7 @@ function uploadBallotManifest() {
             // ballotManifest = ballotM;
 
             getConductorState(function() {
-               displayBallotManifest();
+               displayBallotManifest(ballotType);
                mainLoop();
             });
          },
@@ -329,10 +371,12 @@ function uploadBallotManifest() {
    });
 }
 
-function displayBallotManifest () {
+function displayBallotManifest (ballotType) {
    ballotManifestUploadContainer.style.display = 'block';
    ballotManifestUploadContainer.innerHTML = '(Ballot Manifest Added)';
    ballotManifestUploadContainer.classList.add('complete');
+   // In the future, create it dynamically:
+   document.body.appendChild(ballotManifestUploadContainer);
 
    //uiState['got_ballot_manifest'] = true;
 }
@@ -385,7 +429,7 @@ function ballotNumToLocation(fullManifest, ballotNum) {
    } while (finished == false);
 }
 
-function uploadCVRFile() {
+function uploadCVRFile(ballotType) {
    cvrFileUploadContainer.style.display = 'block';
 
    var uploadButton = getById('uploadCVRButton');
@@ -393,9 +437,10 @@ function uploadCVRFile() {
 
    $(uploadButton).click(function() {
       var form_data = new FormData(uploadForm);
+      form_data.append('contest_name', ballotType);
       $.ajax({
          type: 'POST',
-         url: '/upload-cvr-file',
+         url: '/upload-cvr-file', // ?contest_name='+ballotType,
          data: form_data,
          contentType: false,
          cache: false,
@@ -403,6 +448,7 @@ function uploadCVRFile() {
          success: function(data) {
             console.log('Success!');
             getConductorState(function() {
+               displayCVRFile(ballotType);
                mainLoop();
             });
          },
@@ -411,7 +457,7 @@ function uploadCVRFile() {
 
 }
 
-function displayCVRFile() {
+function displayCVRFile(ballotType) {
    cvrFileUploadContainer.style.display = 'block';
    cvrFileUploadContainer.innerHTML = '(CVR file uploaded)';
    cvrFileUploadContainer.classList.add('complete');
@@ -451,30 +497,36 @@ function enterSeed() {
 function displaySeed() {
 // TODO: this can be split out into a couple of functions:
 
-         var ballotOl, ballotsToInspect;
-         ballotsToInspect = conductorState['ballot_ids'];
 
 
          seedContainer.innerHTML = 'Seed: <strong>'+conductorState['seed']+'</strong>';
          seedContainer.classList.add('complete');
+         mainLoop();
+}
+
+function displayPullSheet(ballotType) {
+   return function () {
+         var ballotOl, ballotsToInspect;
+         ballotsToInspect = conductorState['ballot_ids'][ballotType];
          ballotListDiv.style.display = 'block';
          
          // ballotListDiv.appendChild(document.createTextNode('Ballot order:'));
          // ballotOl = buildOrderedList(ballotsToInspect);
          // ballotListDiv.appendChild(ballotOl);
          
-         ballotListDiv.appendChild(document.createTextNode('Sorted order:'));
-         // '.slice' is so we can have a non-destructive sort:
-         ballotListDiv.appendChild(buildOrderedList(ballotsToInspect.slice().sort(function (a, b) {  return a - b;  }))); // numeric sort
+//         ballotListDiv.appendChild(document.createTextNode('Sorted order:'));
+//         // '.slice' is so we can have a non-destructive sort:
+//         ballotListDiv.appendChild(buildOrderedList(ballotsToInspect.slice().sort(function (a, b) {  return a - b;  }))); // numeric sort
 
-         var pullSheetText = document.createTextNode('Ballot Pull Sheet...');
+         var pullSheetText = document.createTextNode('Ballot Pull Sheet... ('+ballotType+')'); // TODO: pretty
          var a = newElem('a');
-         a.href = '/ballot-pull-sheet.txt';
+         a.href = '/ballot-pull-sheet-'+ballotType+'.txt';
          a.target = '_blank';
          a.appendChild(pullSheetText);
          ballotListDiv.appendChild(a);
 
          //uiState['got_seed'] = true;
+   }
 }
 
 function buildOrderedList(elems) {
@@ -494,13 +546,13 @@ function buildOrderedList(elems) {
 
 // TODO: better name because there's also 'newBallot':
 
-function makeNewBallotOrReturnResults() {
+function makeNewBallotOrReturnResults(ballotType) {
    // Less diff noise -- TODO:
-   getConductorState(makeNewBallotOrReturnResultsPrime);
+   getConductorState(function(){ makeNewBallotOrReturnResultsPrime (ballotType)});
 }
 
-function makeNewBallotOrReturnResultsPrime() {
-   var ballotIdsLeft = conductorState['ballot_ids'].filter(function(x) {
+function makeNewBallotOrReturnResultsPrime(ballotType) {
+   var ballotIdsLeft = conductorState['ballot_ids'][ballotType].filter(function(x) {
       return !(conductorState['all_interpretations'].map(function(y) { return y['ballot_id']; }).includes(x));
    });
    if (ballotIdsLeft.length == 0) {
@@ -508,20 +560,20 @@ function makeNewBallotOrReturnResultsPrime() {
    } else {
 
       if (debugMode) {
-         displayAuditStatus(function() { addBallot(ballotIdsLeft[0]) });
+         displayAuditStatus(function() { addBallot(ballotType, ballotIdsLeft[0]) });
       } else {
-         addBallot(ballotIdsLeft[0]);
+         addBallot(ballotType, ballotIdsLeft[0]);
       }
 
    }
 }
 
-function addBallot(ballot_id) {
-      var ballotDiv = newBlankBallot(ballot_id);
+function addBallot(ballotType, ballot_id) {
+      var ballotDiv = newBlankBallot(ballotType, ballot_id);
 
       timestampEvent({'event': 'add_ballot', 'ballot_id': ballot_id});
 
-      ballotDiv.appendChild(newInnerForm(ballot_id));
+      ballotDiv.appendChild(newInnerForm(ballotType, ballot_id));
       ballotDiv.classList.add('inProgress');
 
       // We append to body so we can interleave status in debug mode:
@@ -568,7 +620,7 @@ function scrollToTheBottom() {
 };
 
 // todo: not 'blank': 'newBallotDiv'?:
-function newBlankBallot(ballot_id) {
+function newBlankBallot(ballotType, ballot_id) {
    var ballot, numberLabel, innerForm, ballotNumber;
    ballot = newElem('div');
    ballot.classList.add('ballot', 'container');
@@ -576,7 +628,7 @@ function newBlankBallot(ballot_id) {
 
    numberLabel.classList.add('numberLabel', 'inProgress');
    //numberLabel.innerText = 'Ballot # '+(conductorState['ballot_ids'].indexOf(ballot_id)+1)+', ID: '+ballot_id+', Location: '+ballotNumToLocation(conductorState['ballot_manifest'], ballot_id); // TODO: 'innerText' may not be cross-browser
-   var ballotNum = conductorState['ballot_ids'].indexOf(ballot_id) + 1;
+   var ballotNum = conductorState['ballot_ids'][ballotType].indexOf(ballot_id) + 1;
    numberLabel.innerText = ballotNumToLocation(conductorState['ballot_manifest'], ballot_id) + ' (#'+ballotNum+')'; // TODO: 'innerText' may not be cross-browser
 
    numberLabel.onclick = function(event) {
@@ -610,9 +662,10 @@ function newBlankBallot(ballot_id) {
 function newCompleteBallot(ballot_id) {
 };
 
-function createFinishedBallots() {
-   conductorState['all_interpretations'].forEach(function(interpretationJSON) {
-      var ballotDiv = newBlankBallot(interpretationJSON['ballot_id']);
+function createFinishedBallots(ballotType) {
+   return function() {
+   conductorState['all_interpretations'][ballotType].forEach(function(interpretationJSON) {
+      var ballotDiv = newBlankBallot(ballotType, interpretationJSON['ballot_id']);
 
       ballotDiv.appendChild(candidateSelectionList(interpretationJSON));
       ballotDiv.classList.add('complete');
@@ -621,9 +674,10 @@ function createFinishedBallots() {
    });
    //uiState['created_finished_ballots'] = true;
    mainLoop();
+   }
 };
 
-function newInnerForm(ballot_id) {
+function newInnerForm(ballotType, ballot_id) {
 
    var innerForm, saveButton;
    innerForm = newElem('div');
@@ -649,13 +703,13 @@ function newInnerForm(ballot_id) {
          var x = document.querySelector('input[name="'+contestCheckboxName(ballot_id, contest.id)+'"]:checked').value;
          dat['contests'][contest.id] = x;
       });
-      innerForm.parentNode.appendChild(newInterpretationConfirmation(dat));
+      innerForm.parentNode.appendChild(newInterpretationConfirmation(ballotType, dat));
       innerForm.parentNode.removeChild(innerForm); // This has to be after the other '.parentNode's or they'll be null
    };
    return innerForm;
 };
 
-function newInterpretationConfirmation(interpretationJSON) {
+function newInterpretationConfirmation(ballotType, interpretationJSON) {
    var dat = interpretationJSON;
    var confirmationDiv = newElem('div');
    var confirmButton = newElem('button');
@@ -674,7 +728,7 @@ function newInterpretationConfirmation(interpretationJSON) {
    confirmButton.onclick = function(event) {
       $.ajax({
          url: '/add-interpretation',
-         data: JSON.stringify({'interpretation': dat}),
+         data: JSON.stringify({'interpretation': dat, 'contest_type': ballotType}),
          // dataType: 'json',
          method: 'POST',
          contentType: 'application/json'
@@ -690,7 +744,7 @@ function newInterpretationConfirmation(interpretationJSON) {
          //   on each interpretation, since we're running for a fixed number of
          //   ballots. In most audits, though, you'd want to check for that
          //   here:
-         makeNewBallotOrReturnResults(); // TODO: don't do this if you're clicking to save a second time and we already have an unfinished one
+         makeNewBallotOrReturnResults(ballotType); // TODO: don't do this if you're clicking to save a second time and we already have an unfinished one
          // window.event.stopPropagation();
          event.stopPropagation(); // Maybe unnecessary
       }).fail(reportError);
@@ -699,7 +753,7 @@ function newInterpretationConfirmation(interpretationJSON) {
    //   That's intentional, although it could change based on the spec:
    rejectButton.onclick = function() {
       timestampEvent({'event': 'click_reject', 'ballot_id': ballot_id});
-      confirmationDiv.parentNode.appendChild(newInnerForm(ballot_id));
+      confirmationDiv.parentNode.appendChild(newInnerForm(ballotType, ballot_id));
       confirmationDiv.parentNode.removeChild(confirmationDiv);
    };
 
