@@ -29,8 +29,11 @@ To run the tests, you'll need zerotest:
 
     pip install zerotest
 
-You can run a "smoketest" by starting up the server (see Usage), optionally capturing
+You can run a "smoketest" of the server code by starting up the server (see Usage),
+optionally capturing
 the debug output (stdout and stderr), and then running these tests.
+It currently makes a few dozen HTTP requests to set up the server and
+enter 6 ballot interpretations, and checks the exact json responses to every request.
 
     pytest test/test_reset.py
     pytest test/test_comparison_setup.py
@@ -42,8 +45,9 @@ the debug output (stdout and stderr), and then running these tests.
     # Stop the server if desired to stop logging stdout/stderr
 
 TODO: Automate the file uploads
-      Use Hypothesis to chain those all together
-      Find a way to test more of the output and results
+      Make it easier to ignore unimportant differences or update tests
+        when the format of the json responses changes.
+      Use Hypothesis to chain the tests together so plain old pytest would work
 
 Older test of SUITE:
 
