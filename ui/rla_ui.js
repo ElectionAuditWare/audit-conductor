@@ -100,7 +100,8 @@ var auditSteps = {
             displayPullSheet('ballot_polling'),
             createButton('Click to enter interpretations'),
             createFinishedBallots('ballot_polling'),
-            makeNewBallotOrReturnResults('ballot_polling'),
+            makeNewBallotsUpToNumber(6, 'ballot_polling'),
+            displayAuditStatus('ballot_polling', mainLoop),
          ],
       'ballot_comparison': [
             maybeGetAuditName,
@@ -110,7 +111,8 @@ var auditSteps = {
             displayPullSheet('ballot_comparison'),
             createButton('Click to enter interpretations'),
             createFinishedBallots('ballot_comparison'),
-            makeNewBallotOrReturnResults('ballot_comparison'),
+            makeNewBallotsUpToNumber(6, 'ballot_comparison'),
+            displayAuditStatus('ballot_comparison', mainLoop),
          ],
       'ri_pilot': [
             maybeGetAuditName,
@@ -124,10 +126,25 @@ var auditSteps = {
             displayPullSheet('ballot_comparison'),
             createButton('Click to enter Ballot Polling (Portsmouth) interpretations'),
             createFinishedBallots('ballot_polling'),
-            makeNewBallotOrReturnResults('ballot_polling'),
+
+            announce('Portsmouth scale method (64):'),
+            makeNewBallotsUpToNumber(64, 'ballot_polling'),
+            announce('Portsmouth counting method (8):'),
+            makeNewBallotsUpToNumber(64+8, 'ballot_polling'),
+            announce('Portsmouth ruler method (64):'),
+            makeNewBallotsUpToNumber(64+8+64, 'ballot_polling'),
+            announce('Portsmouth k-cut method (64):'),
+            makeNewBallotsUpToNumber(64+8+64+64, 'ballot_polling'),
+            displayAuditStatus('ballot_polling', mainLoop),
             createButton('Click to enter Ballot Comparison (Bristol) interpretations'),
             createFinishedBallots('ballot_comparison'),
-            makeNewBallotOrReturnResults('ballot_comparison'),
+
+            announce('Bristol one-contest (50):')
+            makeNewBallotsUpToNumber(50, 'ballot_comparison'),
+            announce('Bristol ten-contest (50):')
+            makeNewBallotsUpToNumber(100, 'ballot_comparison'),
+
+            displayAuditStatus('ballot_comparison', mainLoop),
          ],
    };
 
@@ -617,36 +634,32 @@ function buildOrderedList(elems) {
 
 // TODO: better name because there's also 'newBallot':
 
-function makeNewBallotOrReturnResults(ballotType) {
-   return function() {
-   // Less diff noise -- TODO:
-   getConductorState(function(){ makeNewBallotOrReturnResultsPrime (ballotType)});
-   }
-}
-
-function makeNewBallotOrReturnResultsPrime(ballotType) {
-   var ballotIdsLeft = conductorState['ballot_ids'][ballotType].filter(function(x) {
-      return !(conductorState['all_interpretations'][ballotType].map(function(y) { return y['ballot_id']; }).includes(x));
-   });
-   if (ballotIdsLeft.length == 0) {
-      displayAuditStatus(ballotType, mainLoop);
-   } else {
-
-      if (debugMode) {
-         displayAuditStatus(ballotType, function() { addBallot(ballotType, ballotIdsLeft[0]) });
+function makeNewBallotsUpToNumber(numberToGoUpTo, ballotType) {
+   return function() { getConductorState(function() {
+      var ballotIdsLeft = conductorState['ballot_ids'][ballotType].filter(function(x) {
+         return !(conductorState['all_interpretations'][ballotType].map(function(y) { return y['ballot_id']; }).includes(x));
+      });
+      // '>=' because ballots are 1-indexed and arrays are zero-indexed:
+      if ((ballotIdsLeft.length == 0) || (conductorState['ballot_ids'][ballotType].indexOf(ballotIdsLeft[0]) >= numberToGoUpTo)) {
+         mainLoop();
       } else {
-         addBallot(ballotType, ballotIdsLeft[0]);
+   
+         if (debugMode) {
+            displayAuditStatus(ballotType, function() { addBallot(numberToGoUpTo, ballotType, ballotIdsLeft[0]) })();
+         } else {
+            addBallot(numberToGoUpTo, ballotType, ballotIdsLeft[0]);
+         }
+   
       }
-
-   }
+   })};
 }
 
-function addBallot(ballotType, ballot_id) {
+function addBallot(numToGoUpTo, ballotType, ballot_id) {
       var ballotDiv = newBlankBallot(ballotType, ballot_id);
 
       timestampEvent({'event': 'add_ballot', 'ballot_id': ballot_id});
 
-      ballotDiv.appendChild(newInnerForm(ballotType, ballot_id));
+      ballotDiv.appendChild(newInnerForm(numToGoUpTo, ballotType, ballot_id));
       ballotDiv.classList.add('inProgress');
 
       // We append to body so we can interleave status in debug mode:
@@ -656,6 +669,7 @@ function addBallot(ballotType, ballot_id) {
 }
 
 function displayAuditStatus(ballotType, andThen) {
+   return function() {
       var finalResultContainer = newElem('div');
       var progressBar = document.createTextNode('Computing audit status...')
       finalResultContainer.appendChild(progressBar);
@@ -684,7 +698,7 @@ function displayAuditStatus(ballotType, andThen) {
          scrollToTheBottom();
          andThen();
       }).fail(reportError);
-
+   }
 };
 
 
@@ -752,7 +766,7 @@ function createFinishedBallots(ballotType) {
    }
 };
 
-function newInnerForm(ballotType, ballot_id) {
+function newInnerForm(numToGoUpTo, ballotType, ballot_id) {
 
    var innerForm, saveButton;
    innerForm = newElem('div');
@@ -778,13 +792,13 @@ function newInnerForm(ballotType, ballot_id) {
          var x = document.querySelector('input[name="'+contestCheckboxName(ballot_id, contest.id)+'"]:checked').value;
          dat['contests'][contest.id] = x;
       });
-      innerForm.parentNode.appendChild(newInterpretationConfirmation(ballotType, dat));
+      innerForm.parentNode.appendChild(newInterpretationConfirmation(numToGoUpTo, ballotType, dat));
       innerForm.parentNode.removeChild(innerForm); // This has to be after the other '.parentNode's or they'll be null
    };
    return innerForm;
 };
 
-function newInterpretationConfirmation(ballotType, interpretationJSON) {
+function newInterpretationConfirmation(numToGoUpTo, ballotType, interpretationJSON) {
    var dat = interpretationJSON;
    var confirmationDiv = newElem('div');
    var confirmButton = newElem('button');
@@ -819,7 +833,7 @@ function newInterpretationConfirmation(ballotType, interpretationJSON) {
          //   on each interpretation, since we're running for a fixed number of
          //   ballots. In most audits, though, you'd want to check for that
          //   here:
-         makeNewBallotOrReturnResults(ballotType)(); // TODO: don't do this if you're clicking to save a second time and we already have an unfinished one
+         makeNewBallotsUpToNumber(numToGoUpTo, ballotType)(); // TODO: don't do this if you're clicking to save a second time and we already have an unfinished one
          // window.event.stopPropagation();
          event.stopPropagation(); // Maybe unnecessary
       }).fail(reportError);
@@ -828,7 +842,7 @@ function newInterpretationConfirmation(ballotType, interpretationJSON) {
    //   That's intentional, although it could change based on the spec:
    rejectButton.onclick = function() {
       timestampEvent({'event': 'click_reject', 'ballot_id': ballot_id});
-      confirmationDiv.parentNode.appendChild(newInnerForm(ballotType, ballot_id));
+      confirmationDiv.parentNode.appendChild(newInnerForm(numToGoUpTo, ballotType, ballot_id));
       confirmationDiv.parentNode.removeChild(confirmationDiv);
    };
 
