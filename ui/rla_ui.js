@@ -110,7 +110,7 @@ var auditSteps = {
             displayPullSheet('ballot_comparison'),
             createButton('Click to enter interpretations'),
             createFinishedBallots('ballot_comparison'),
-            makeNewBallotOrReturnResults('ballot_polling'),
+            makeNewBallotOrReturnResults('ballot_comparison'),
          ],
       'ri_pilot': [
             maybeGetAuditName,
@@ -125,7 +125,7 @@ var auditSteps = {
             createButton('Click to enter Ballot Polling (Portsmouth) interpretations'),
             createFinishedBallots('ballot_polling'),
             makeNewBallotOrReturnResults('ballot_polling'),
-            createButton('Click to enter interpretations'),
+            createButton('Click to enter Ballot Comparison (Bristol) interpretations'),
             createFinishedBallots('ballot_comparison'),
             makeNewBallotOrReturnResults('ballot_comparison'),
          ],
@@ -621,6 +621,7 @@ function makeNewBallotOrReturnResults(ballotType) {
    return function() {
    // Less diff noise -- TODO:
    getConductorState(function(){ makeNewBallotOrReturnResultsPrime (ballotType)});
+   }
 }
 
 function makeNewBallotOrReturnResultsPrime(ballotType) {
@@ -628,7 +629,7 @@ function makeNewBallotOrReturnResultsPrime(ballotType) {
       return !(conductorState['all_interpretations'][ballotType].map(function(y) { return y['ballot_id']; }).includes(x));
    });
    if (ballotIdsLeft.length == 0) {
-      displayAuditStatus(ballotType, function(){});
+      displayAuditStatus(ballotType, mainLoop);
    } else {
 
       if (debugMode) {
@@ -637,7 +638,6 @@ function makeNewBallotOrReturnResultsPrime(ballotType) {
          addBallot(ballotType, ballotIdsLeft[0]);
       }
 
-   }
    }
 }
 
@@ -883,7 +883,7 @@ function newRaceCheckbox(ballot_id, race_id, race_title, race_choices) {
       checkbox.value = choice;
 
       label = newElem('label');
-      label.innerHTML = choice; // again, careful!
+      label.innerHTML = prettifyChoice(choice); // again, careful!
       label.setAttribute('for', checkbox.id);
       label.classList.add('choiceCheckboxLabel');
 

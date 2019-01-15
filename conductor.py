@@ -663,12 +663,12 @@ def get_ballot_comparison_results():
     rla = WAVEaudit.Comparison()
 
     contest_outcomes = []
-    reported_results = audit_types['ballot_comparison']['reported_results']
-    for results in reported_results:
+    reported_results_obj = audit_types['ballot_comparison']['reported_results']
+    for results in reported_results_obj:
         contest_id = results['contest_id']
         # TODO: 'all_contests' should probably be a dict instead:
         contest        = list(filter(lambda c: c['id'] == contest_id, audit_types['ballot_comparison']['all_contests']))[0]
-        contest_result = list(filter(lambda c: c['contest_id'] == contest_id, reported_results))[0]
+        contest_result = list(filter(lambda c: c['contest_id'] == contest_id, reported_results_obj))[0]
 
     # TODO: also replace these lines with getting directly from CVR (is that the usual way to do it?):
         all_contestant_names = list(set(contest['candidates']).union({ i['contests'][contest['id']] for i in audit_state['all_interpretations']['ballot_comparison']}))
