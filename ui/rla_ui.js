@@ -846,17 +846,27 @@ function candidateSelectionList(ballotType, interpretationJSON) {
    }
 */
    conductorState['all_contests'][ballotType].forEach(function(contest) {
-      resultList.push(contest.title + ': ' + interpretationJSON['contests'][contest.id]);
+      resultList.push(contest.title + ': ' + prettifyChoice(interpretationJSON['contests'][contest.id]));
    });
    return buildOrderedList(resultList);
 };
 
 function prettifyChoice(choiceName) {
+   // the entry with "DEM" should be superfluous, see what follows
    var choiceMap = {
+      'DEM David N. Cicilline (13215)': 'David N. Cicilline',
+      'David N. Cicilline (13215)': 'David N. Cicilline',
       'Write-in': 'Write-in candidate',
       'undervote': 'No selection (undervote)',
       'overvote': 'Overvote',
+      'Representative in Congress District 1 (13213) ': 'Rep. in Congress Dist. 1',
+      '1. RHODE ISLAND SCHOOL BUILDINGS - $250,000,000': 'Question 1 (schools)',
+      '2. HIGHER EDUCATION FACILITIES - $70,000,000': 'Question 2 (higher ed)',
+      '3. GREEN ECONOMY AND CLEAN WATER - $47,300,000': 'Question 3 (green econ)',
       };
+   if (['DEM ', 'REP ', 'MOD ', 'Com ', 'Ind '].includes(choiceName.substring(0,4))) {
+      choiceName = choiceName.substring(4);
+   };
    return choiceMap[choiceName] || choiceName;
 };
 
