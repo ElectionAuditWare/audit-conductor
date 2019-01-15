@@ -693,7 +693,7 @@ function displayAuditStatus(ballotType, andThen) {
 //OUT
             finalResultContainer.innerHTML += '<p>Contest: <strong>'+contest['title']+'</strong> Status: <strong>'+outcome['status']+'</strong> ('+outcome.progress+')</p>';
          });
-         finalResultContainer.innerHTML += '<br /><br /><a href="/reset">Reset and audit another contest</a>';
+         // finalResultContainer.innerHTML += '<br /><br /><a href="/reset">Reset and audit another contest</a>';
          finalResultContainer.style.display = 'block';
          scrollToTheBottom();
          andThen();
