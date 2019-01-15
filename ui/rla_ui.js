@@ -47,7 +47,7 @@ var auditTypeContainer;
 // var finalResultContainer;
 var cvrFileUploadContainer;
 var ballotListDiv; // rename for consistency?
-var ballotEntriesContainer;
+// var ballotEntriesContainer;
 
 // Couple helpers to make the code shorter:
 function newElem(elemType) {
@@ -64,7 +64,7 @@ window.onload = function() {
    //finalResultContainer = getById('finalResultContainer');
    cvrFileUploadContainer = getById('cvrFileUploadContainer');
    ballotListDiv = getById('listOfBallotsToPull');
-   ballotEntriesContainer = getById('ballotEntriesContainer');
+   // ballotEntriesContainer = getById('ballotEntriesContainer');
 
    getConductorState(mainLoop);
 /*
@@ -689,7 +689,8 @@ function displayAuditStatus(ballotType, andThen) {
 
 
 function scrollToTheBottom() {
-   window.scrollTo(0,document.body.scrollHeight);
+   // This was found to be distracting/confusing!:
+   // window.scrollTo(0,document.body.scrollHeight);
 };
 
 // todo: not 'blank': 'newBallotDiv'?:
@@ -702,7 +703,7 @@ function newBlankBallot(ballotType, ballot_id) {
    numberLabel.classList.add('numberLabel', 'inProgress');
    //numberLabel.innerText = 'Ballot # '+(conductorState['ballot_ids'].indexOf(ballot_id)+1)+', ID: '+ballot_id+', Location: '+ballotNumToLocation(conductorState['ballot_manifest'], ballot_id); // TODO: 'innerText' may not be cross-browser
    var ballotNum = conductorState['ballot_ids'][ballotType].indexOf(ballot_id) + 1;
-   numberLabel.innerText = ballotNumToLocation(conductorState['ballot_manifest'], ballot_id) + ' (#'+ballotNum+')'; // TODO: 'innerText' may not be cross-browser
+   numberLabel.innerText = ballotNumToLocation(conductorState['ballot_manifest'][ballotType], ballot_id) + ' (#'+ballotNum+')'; // TODO: 'innerText' may not be cross-browser
 
    numberLabel.onclick = function(event) {
       // This work in all IEs we need it to?:
@@ -740,10 +741,11 @@ function createFinishedBallots(ballotType) {
    conductorState['all_interpretations'][ballotType].forEach(function(interpretationJSON) {
       var ballotDiv = newBlankBallot(ballotType, interpretationJSON['ballot_id']);
 
-      ballotDiv.appendChild(candidateSelectionList(interpretationJSON));
+      ballotDiv.appendChild(candidateSelectionList(ballotType, interpretationJSON));
       ballotDiv.classList.add('complete');
 
-      ballotEntriesContainer.appendChild(ballotDiv);
+      //ballotEntriesContainer.appendChild(ballotDiv);
+      document.body.appendChild(ballotDiv);
    });
    //uiState['created_finished_ballots'] = true;
    mainLoop();
@@ -817,7 +819,7 @@ function newInterpretationConfirmation(ballotType, interpretationJSON) {
          //   on each interpretation, since we're running for a fixed number of
          //   ballots. In most audits, though, you'd want to check for that
          //   here:
-         makeNewBallotOrReturnResults(ballotType); // TODO: don't do this if you're clicking to save a second time and we already have an unfinished one
+         makeNewBallotOrReturnResults(ballotType)(); // TODO: don't do this if you're clicking to save a second time and we already have an unfinished one
          // window.event.stopPropagation();
          event.stopPropagation(); // Maybe unnecessary
       }).fail(reportError);
@@ -830,13 +832,13 @@ function newInterpretationConfirmation(ballotType, interpretationJSON) {
       confirmationDiv.parentNode.removeChild(confirmationDiv);
    };
 
-   confirmationDiv.appendChild(candidateSelectionList(interpretationJSON));
+   confirmationDiv.appendChild(candidateSelectionList(ballotType, interpretationJSON));
    confirmationDiv.appendChild(rejectButton);
    confirmationDiv.appendChild(confirmButton);
    return confirmationDiv;
 }
 
-function candidateSelectionList(interpretationJSON) {
+function candidateSelectionList(ballotType, interpretationJSON) {
    var resultList = [];
 /*
    for (var contestId in interpretationJSON['contests']) {
