@@ -48,6 +48,7 @@ if not os.path.exists(UPLOAD_FOLDER):
 app = Flask(__name__, static_url_path='')
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
 Interpretation = Dict[str, List[Dict[str, str]]]
 
@@ -652,7 +653,6 @@ def get_ballot_comparison_results():
     rla = WAVEaudit.Comparison()
 
     contest_outcomes = []
-
     for results in audit_state['reported_results']:
         contest_id = results['contest_id']
         # TODO: 'all_contests' should probably be a dict instead:
@@ -670,14 +670,10 @@ def get_ballot_comparison_results():
     
         reported_choices = {k: 0 for k in all_contestant_names}
         for d in contest_result['results']:
-            # TODO: This isn't the right way to do this. We need to guarantee that the sum
-            # of all the reported votes is the total number of ballots. Right now, we're just
-            # fudging the numbers by adding the extra ones to the "undervote" report, but this
-            # is high-priority.
-            reported_choices[d['candidate']] += int(d['proportion'] * audit_state['total_number_of_ballots']['ballot_comparison'])
-    
-        reported_choices["undervote"] += (audit_state['total_number_of_ballots']['ballot_comparison'] - sum(reported_choices.values()))
-    
+            reported_choices[d['candidate']] += d['votes']
+
+        assert(sum(reported_choices.values()) == audit_state['total_number_of_ballots']['ballot_comparison'])
+
         ballot_count = sum(reported_choices.values())
         reported_results = [ make_result(all_contestants, r) for r in contest_result['results'] ]
     
@@ -697,6 +693,7 @@ def get_ballot_comparison_results():
         for interpretation in audit_state['all_interpretations']['ballot_comparison']:
             ballot = WAVEelection.Ballot()
             ballot.set_actual_value(all_contestants[interpretation['contests'][contest['id']]])
+            ballot.set_audit_seq_num(interpretation['ballot_id'])
             # TODO: this is one way to do the ballot number but it might not be (probably isn't) the best:
             matching_cvr = audit_state['cvrs']['ballot_comparison'][interpretation['ballot_id']]
             ballot.set_reported_value(all_contestants[matching_cvr[contest['title']]])
