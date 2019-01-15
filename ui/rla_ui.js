@@ -139,9 +139,9 @@ var auditSteps = {
             createButton('Click to enter Ballot Comparison (Bristol) interpretations'),
             createFinishedBallots('ballot_comparison'),
 
-            announce('Bristol one-contest (50):')
+            announce('Bristol one-contest (50):'),
             makeNewBallotsUpToNumber(50, 'ballot_comparison'),
-            announce('Bristol ten-contest (50):')
+            announce('Bristol ten-contest (50):'),
             makeNewBallotsUpToNumber(100, 'ballot_comparison'),
 
             displayAuditStatus('ballot_comparison', mainLoop),

@@ -62,7 +62,10 @@ def add_non_candidate_choices(l):
 
 # Usually you'd run the audit until a stopping condition, but for the pilot
 #   we're fixing the fixing the number of ballots to interpret:
-number_of_ballots_to_interpret = 6
+number_of_ballots_to_interpret = {
+   'ballot_polling': 200,
+   'ballot_comparison': 100,
+   }
 
 
 
@@ -442,6 +445,7 @@ default_audit_state = {
    'ballot_manifest': {}, # None,
    # these next two can be gotten from 'ballot_manifest':
    'total_number_of_ballots': {},
+   # We don't actually use this:
    'num_ballots_already_sampled': 0,
    'ballot_ids': {'ballot_polling': [], 'ballot_comparison': []}, # None, # {'ballot_polling': [], 'ballot_comparison': []},
 
@@ -645,7 +649,7 @@ def get_ballot_polling_results():
         bp.init(results=reported_results, ballot_count=audit_state['total_number_of_ballots']['ballot_polling']) # 100)
         bp.set_parameters([1]) # this is a tolerance of 1%
         ballots = [ make_ballot(all_contestants, i, contest_id) for i in audit_state['all_interpretations']['ballot_polling'] ]
-        final_ballot = len(ballots) >= number_of_ballots_to_interpret
+        final_ballot = len(ballots) >= number_of_ballots_to_interpret['ballot_polling']
         print("DEBUG: ballots: %d final ballot: %s" %(len(ballots),final_ballot))
         if (final_ballot):
             bp.recompute(results=reported_results, ballots=ballots)
@@ -709,7 +713,7 @@ def get_ballot_comparison_results():
             matching_cvr = audit_state['cvrs']['ballot_comparison'][interpretation['ballot_id']]
             ballot.set_reported_value(all_contestants[matching_cvr[contest['title']]])
             ballots.append(ballot)
-        final_ballot = len(ballots) >= number_of_ballots_to_interpret
+        final_ballot = len(ballots) >= number_of_ballots_to_interpret['ballot_comparison']
         print("DEBUG: ballots: %d final ballot: %s" %(len(ballots),final_ballot))
         if (final_ballot):
             rla.recompute(ballots, reported_results)
@@ -826,8 +830,8 @@ def set_seed():
 
       for ballot_type in ballot_types:
 
-          [], audit_state['ballot_ids'][ballot_type] = sampler.generate_outputs(seed=audit_state['seed'], with_replacement=False, n=(audit_state['num_ballots_already_sampled']+number_of_ballots_to_interpret),a=(audit_state['num_ballots_already_sampled']+1),b=audit_state['total_number_of_ballots'][ballot_type],skip=0)
-          audit_state['num_ballots_already_sampled'] += number_of_ballots_to_interpret
+          [], audit_state['ballot_ids'][ballot_type] = sampler.generate_outputs(seed=audit_state['seed'], with_replacement=False, n=(audit_state['num_ballots_already_sampled']+number_of_ballots_to_interpret[ballot_type]),a=(audit_state['num_ballots_already_sampled']+1),b=audit_state['total_number_of_ballots'][ballot_type],skip=0)
+          audit_state['num_ballots_already_sampled'] += number_of_ballots_to_interpret[ballot_type]
           # At least in RI we will be running them in sorted order:
           audit_state['ballot_ids'][ballot_type] = sorted(audit_state['ballot_ids'][ballot_type])
       return '' # jsonify({'ballot_ids': audit_state['ballot_ids'][ballot_type]}) # TODO: do we want to return anything here?
