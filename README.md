@@ -25,7 +25,23 @@ Maybe todo:
 
 ## Tests
 
-You can run the tests by calling
+You can run the tests by starting up the server (see Usage), optionally capturing
+the debug output (stdout and stderr), and then running these tests.
+
+    pytest test/test_reset.py
+    pytest test/test_comparison_setup.py
+    # Manually visit http://127.0.0.1:5000 and upload the Bristol Manifest and CVR
+    pytest test/test_comparison_acvrs.py
+
+    # manually visit http://127.0.0.1:5000 and click on "Click to enter interpretations", and wait
+    # for the results of "Computing audit status..." to be calculated
+    # Stop the server if desired to stop logging stdout/stderr
+
+TODO: Automate the file uploads
+      Use Hypothesis to chain those all together
+      Find a way to test more of the output and results
+
+Older test of SUITE:
 
     pytest test/test.py
 
