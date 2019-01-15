@@ -448,7 +448,7 @@ default_audit_state = {
    # Hardcoding/configuration, which will come from various CSVs in the future:
    # ("Main" means the one contest we're non-opportunistically auditing):
    # TODO: write-in etc should go here (so we have them in the ballot polling)
-   'all_contests': None, 
+   # 'all_contests': None, 
 #       [
 #
 ##      {'id': 'congress_district_1',
@@ -472,7 +472,15 @@ default_audit_state = {
    # 'main_contest_id': 'lieutenant_governor', #congress_district_1',
    #ballots_cast_for_main_apparent_winner = 600
    # total_main_ballots_cast = 1000
+   # doing per-contest_type instead:
    'reported_results': None,
+
+   # A little kludgy - would like to rewrite in the future:
+   'all_contests': {
+      'ballot_polling': all_contests_portsmouth,
+      'ballot_comparison': all_contests_bristol,
+      },
+
 #       [
 #       {'contest_id': 'lieutenant_governor',
 #        'results': [
@@ -614,11 +622,13 @@ def get_ballot_polling_results():
     bp = WAVEaudit.BallotPolling()
 
     contest_outcomes = []
-    for results in audit_state['reported_results']:
+    # for results in audit_state['reported_results']:
+    reported_results = audit_types['ballot_polling']['reported_results']
+    for results in reported_results:
         contest_id = results['contest_id']
         # TODO: 'all_contests' should probably be a dict instead:
-        contest        = list(filter(lambda c: c['id'] == contest_id, audit_state['all_contests']))[0]
-        contest_result = list(filter(lambda c: c['contest_id'] == contest_id, audit_state['reported_results']))[0]
+        contest        = list(filter(lambda c: c['id'] == contest_id, audit_types['ballot_polling']['all_contests']))[0]
+        contest_result = list(filter(lambda c: c['contest_id'] == contest_id, reported_results))[0]
     
         # TODO: clean up how we do this. This is just a quick way to
         #   make sure we have all options since there may be ones not
@@ -653,11 +663,12 @@ def get_ballot_comparison_results():
     rla = WAVEaudit.Comparison()
 
     contest_outcomes = []
-    for results in audit_state['reported_results']:
+    reported_results = audit_types['ballot_comparison']['reported_results']
+    for results in reported_results:
         contest_id = results['contest_id']
         # TODO: 'all_contests' should probably be a dict instead:
-        contest        = list(filter(lambda c: c['id'] == contest_id, audit_state['all_contests']))[0]
-        contest_result = list(filter(lambda c: c['contest_id'] == contest_id, audit_state['reported_results']))[0]
+        contest        = list(filter(lambda c: c['id'] == contest_id, audit_types['ballot_comparison']['all_contests']))[0]
+        contest_result = list(filter(lambda c: c['contest_id'] == contest_id, reported_results))[0]
 
     # TODO: also replace these lines with getting directly from CVR (is that the usual way to do it?):
         all_contestant_names = list(set(contest['candidates']).union({ i['contests'][contest['id']] for i in audit_state['all_interpretations']['ballot_comparison']}))
@@ -747,8 +758,8 @@ def set_audit_type():
         if data['type'] in audit_types:
             global audit_state
             audit_state['audit_type_name'] = data['type']
-            audit_state['reported_results'] = audit_types[data['type']]['reported_results']
-            audit_state['all_contests'] = audit_types[data['type']]['all_contests']
+            # audit_state['reported_results'] = audit_types[data['type']]['reported_results']
+            # audit_state['all_contests'] = audit_types[data['type']]['all_contests']
             t = audit_types[data['type']]
             return ''
         else:
@@ -766,9 +777,9 @@ def set_audit_name():
     else:
         return 'Key "audit_name" not present in request', 422
 
-@app.route('/get-contests')
-def route_get_contests():
-    return jsonify({'contests': audit_state['all_contests']})
+# @app.route('/get-contests')
+# def route_get_contests():
+#     return jsonify({'contests': audit_state['all_contests']})
 
 @app.route('/add-interpretation', methods=['POST'])
 def add():
@@ -856,9 +867,9 @@ def get_pull_sheet_row(contest_type, manifest_orig, ballot_id, n):
 # (Not git-adding yet)
 @app.route('/get-audit-status', methods=['POST'])
 def get_audit_status():
-    # print(contest_type_name)
-    # print(contest_types[contest_type_name])
-    x = audit_types[audit_state['audit_type_name']]['get_results']()
+    j = request.get_json()
+    # x = audit_types[audit_state['audit_type_name']]['get_results']()
+    x = audit_types[j['contest_type']]['get_results']()
     print(x)
     return x
 

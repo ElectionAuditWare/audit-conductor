@@ -248,7 +248,6 @@ function createButton(buttonMessage) {
 
 function announce(announcement) {
    return function() {
-      console.log('a', announcement);
       var container = newElem('div');
       container.classList.add('container');
       var msg = document.createTextNode(announcement);
@@ -376,9 +375,7 @@ function makeBallotManifestUploadContainer(ballotType) {
          contentType: false,
          cache: false,
          processData: false,
-         success: function() { // ballotM) {
-            // console.log(ballotM);
-            // ballotManifest = ballotM;
+         success: function() {
 
             getConductorState(function() {
                container.classList.add('complete');
@@ -599,7 +596,7 @@ function displayPullSheet(ballotType) {
          ballotListDiv.appendChild(a);
          ballotListDiv.appendChild(newElem('br'));
 
-         //uiState['got_seed'] = true;
+         mainLoop();
    }
 }
 
@@ -628,14 +625,14 @@ function makeNewBallotOrReturnResults(ballotType) {
 
 function makeNewBallotOrReturnResultsPrime(ballotType) {
    var ballotIdsLeft = conductorState['ballot_ids'][ballotType].filter(function(x) {
-      return !(conductorState['all_interpretations'].map(function(y) { return y['ballot_id']; }).includes(x));
+      return !(conductorState['all_interpretations'][ballotType].map(function(y) { return y['ballot_id']; }).includes(x));
    });
    if (ballotIdsLeft.length == 0) {
-      displayAuditStatus(function(){});
+      displayAuditStatus(ballotType, function(){});
    } else {
 
       if (debugMode) {
-         displayAuditStatus(function() { addBallot(ballotType, ballotIdsLeft[0]) });
+         displayAuditStatus(ballotType, function() { addBallot(ballotType, ballotIdsLeft[0]) });
       } else {
          addBallot(ballotType, ballotIdsLeft[0]);
       }
@@ -658,7 +655,7 @@ function addBallot(ballotType, ballot_id) {
       scrollToTheBottom();
 }
 
-function displayAuditStatus(andThen) {
+function displayAuditStatus(ballotType, andThen) {
       var finalResultContainer = newElem('div');
       var progressBar = document.createTextNode('Computing audit status...')
       finalResultContainer.appendChild(progressBar);
@@ -669,14 +666,14 @@ function displayAuditStatus(andThen) {
       $.ajax({
          url: '/get-audit-status',
          method: 'POST',
-         data: JSON.stringify({}),
+         data: JSON.stringify({'contest_type': ballotType}),
          contentType: 'application/json'
       }).done(function(msg) {
          finalResultContainer.removeChild(progressBar);
          finalResultContainer.innerHTML = 'Audit status:';
          msg['outcomes'].forEach(function(outcome) {
             // 'all_contests' should probably be a dictionary so we don't need to do this filter[0]:
-            var contest = conductorState['all_contests'].filter(function(x) {
+            var contest = conductorState['all_contests'][ballotType].filter(function(x) {
                return x['id'] == outcome['contest_id'];
             })[0];
 //OUT
@@ -763,7 +760,7 @@ function newInnerForm(ballotType, ballot_id) {
  
    innerForm.classList.add('innerForm');
 
-   conductorState['all_contests'].forEach(function(contest) {
+   conductorState['all_contests'][ballotType].forEach(function(contest) {
       var contestBox = newRaceCheckbox(ballot_id, contest.id, contest.title, contest.candidates);
       innerForm.appendChild(contestBox);
    });
@@ -775,7 +772,7 @@ function newInnerForm(ballotType, ballot_id) {
 
       timestampEvent({'event': 'click_first_save', 'ballot_id': ballot_id});
 
-      conductorState['all_contests'].forEach(function(contest) {
+      conductorState['all_contests'][ballotType].forEach(function(contest) {
          var x = document.querySelector('input[name="'+contestCheckboxName(ballot_id, contest.id)+'"]:checked').value;
          dat['contests'][contest.id] = x;
       });
@@ -846,7 +843,7 @@ function candidateSelectionList(interpretationJSON) {
       resultList.push(contestId + ': ' + interpretationJSON['contests'][contestId]);
    }
 */
-   conductorState['all_contests'].forEach(function(contest) {
+   conductorState['all_contests'][ballotType].forEach(function(contest) {
       resultList.push(contest.title + ': ' + interpretationJSON['contests'][contest.id]);
    });
    return buildOrderedList(resultList);
