@@ -48,6 +48,7 @@ if not os.path.exists(UPLOAD_FOLDER):
 app = Flask(__name__, static_url_path='')
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
 Interpretation = Dict[str, List[Dict[str, str]]]
 
@@ -655,7 +656,6 @@ def get_ballot_comparison_results():
     rla = WAVEaudit.Comparison()
 
     contest_outcomes = []
-
     for results in audit_state['reported_results']:
         contest_id = results['contest_id']
         # TODO: 'all_contests' should probably be a dict instead:
@@ -696,6 +696,7 @@ def get_ballot_comparison_results():
         for interpretation in audit_state['all_interpretations']:
             ballot = WAVEelection.Ballot()
             ballot.set_actual_value(all_contestants[interpretation['contests'][contest['id']]])
+            ballot.set_audit_seq_num(interpretation['ballot_id'])
             # TODO: this is one way to do the ballot number but it might not be (probably isn't) the best:
             matching_cvr = audit_state['cvrs'][interpretation['ballot_id']]
             ballot.set_reported_value(all_contestants[matching_cvr[contest['title']]])
