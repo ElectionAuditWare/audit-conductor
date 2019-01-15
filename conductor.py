@@ -443,7 +443,7 @@ default_audit_state = {
    # these next two can be gotten from 'ballot_manifest':
    'total_number_of_ballots': {},
    'num_ballots_already_sampled': 0,
-   'ballot_ids': {}, # None, # {'ballot_polling': [], 'ballot_comparison': []},
+   'ballot_ids': {'ballot_polling': [], 'ballot_comparison': []}, # None, # {'ballot_polling': [], 'ballot_comparison': []},
 
    # Hardcoding/configuration, which will come from various CSVs in the future:
    # ("Main" means the one contest we're non-opportunistically auditing):

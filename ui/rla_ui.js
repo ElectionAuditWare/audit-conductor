@@ -46,7 +46,6 @@ var seedContainer;
 var auditTypeContainer;
 // var finalResultContainer;
 var cvrFileUploadContainer;
-var ballotManifestUploadContainer;
 var ballotListDiv; // rename for consistency?
 var ballotEntriesContainer;
 
@@ -64,7 +63,6 @@ window.onload = function() {
    auditTypeContainer = getById('auditTypeContainer');
    //finalResultContainer = getById('finalResultContainer');
    cvrFileUploadContainer = getById('cvrFileUploadContainer');
-   ballotManifestUploadContainer = getById('ballotManifestUploadContainer');
    ballotListDiv = getById('listOfBallotsToPull');
    ballotEntriesContainer = getById('ballotEntriesContainer');
 
@@ -180,6 +178,7 @@ function maybeGetCVRFile(ballotType) {
    return function () {
    //if ((conductorState['audit_type_name'] == 'ballot_comparison') && ( ! uiState['got_cvr_file'] )) {
       //if (conductorState['cvr_hash'] === null) {
+      document.body.appendChild(cvrFileUploadContainer);
       if (conductorState['cvr_hash'][ballotType] === undefined) {
          uploadCVRFile(ballotType);
       } else {
@@ -192,6 +191,7 @@ function maybeGetCVRFile(ballotType) {
 
 function maybeGetSeed() {
    //if ( ! uiState['got_seed'] ) {
+      document.body.appendChild(seedContainer);
       if (conductorState['seed'] === null) {
          enterSeed();
       } else {
@@ -341,14 +341,32 @@ function displayAuditName() {
 }
 
 function uploadBallotManifest(ballotType) {
+   makeBallotManifestUploadContainer(ballotType);
+};
 
-   ballotManifestUploadContainer.style.display = 'block';
+function makeBallotManifestUploadContainer(ballotType) {
+   var container = newElem('div');
+   container.classList.add('container');
+   var p = newElem('p');
+   p.innerHTML = 'Upload a Ballot Manifest';
+   container.appendChild(p);
+   var uploadForm = newElem('form');
+   uploadForm.setAttribute('method', 'post');
+   uploadForm.setAttribute('enctype', 'multipart/form-data');
+   var fieldSet1 = newElem('fieldset');
+   var fieldSet2 = newElem('fieldset');
+   var fileInput = newElem('input');
+   fileInput.type = 'file';
+   fileInput.name = 'file';
+   var fileLabel = newElem('label');
+   fileLabel.for = 'file'; // works?
+   fileLabel.innerHTML = 'Select a file: ';
+   var uploadButton = newElem('button');
+   uploadButton.id = 'uploadBallotManifestButton'; // TODO: don't need (or won't)
+   uploadButton.innerHTML = 'Upload';
+   uploadButton.type = 'button'; // so it doesn't submit the form
 
-
-   var uploadButton = getById('uploadBallotManifestButton');
-   var uploadForm = getById('uploadBallotManifestForm');
-
-   $(uploadButton).click(function() {
+   uploadButton.onclick = function() {
       var form_data = new FormData(uploadForm);
       form_data.append('contest_name', ballotType);
       $.ajax({
@@ -363,23 +381,77 @@ function uploadBallotManifest(ballotType) {
             // ballotManifest = ballotM;
 
             getConductorState(function() {
-               displayBallotManifest(ballotType);
+               container.classList.add('complete');
+               container.innerHTML = ballotManifestDisplayedText(ballotType);
                mainLoop();
             });
          },
       }).fail(reportError);
-   });
-}
+   };
+
+
+
+   fieldSet1.appendChild(fileLabel);
+   fieldSet1.appendChild(fileInput);
+   fieldSet2.appendChild(uploadButton);
+   uploadForm.appendChild(fieldSet1);
+   uploadForm.appendChild(fieldSet2);
+   container.appendChild(uploadForm);
+
+
+
+
+
+   //var uploadButton = getById('uploadBallotManifestButton');
+   //var uploadForm = getById('uploadBallotManifestForm');
+
+
+
+
+   document.body.appendChild(container);
+};
+
+/*
+      <div id="ballotManifestUploadContainer" class="container" style="display:none">
+         <p>Upload a Ballot Manifest</p>
+         <form id="uploadBallotManifestForm" method="post" enctype="multipart/form-data">
+            <fieldset>
+               <label for="file">Select a file</label>
+               <input name="file" type="file">
+            </fieldset>
+            <fieldset>
+               <button id="uploadBallotManifestButton" type="button">Upload</button>
+            </fieldset>
+         </form>
+
+      </div>
+*/
+
+
+
 
 function displayBallotManifest (ballotType) {
+   var div = newElem('div');
+   div.classList.add('complete');
+   div.classList.add('container');
+   div.innerHTML = ballotManifestDisplayedText(ballotType);
+   document.body.appendChild(div);
+/*
    ballotManifestUploadContainer.style.display = 'block';
    ballotManifestUploadContainer.innerHTML = '(Ballot Manifest Added)';
    ballotManifestUploadContainer.classList.add('complete');
+*/
+
+
    // In the future, create it dynamically:
-   document.body.appendChild(ballotManifestUploadContainer);
+   // document.body.appendChild(ballotManifestUploadContainer);
 
    //uiState['got_ballot_manifest'] = true;
 }
+
+function ballotManifestDisplayedText(ballotType) {
+   return 'Ballot Manifest added: '+auditTypePrettyName(ballotType);
+};
 
 // https://stackoverflow.com/questions/9716468/pure-javascript-a-function-like-jquerys-isnumeric
 function isNumeric(n) {
@@ -509,6 +581,7 @@ function displayPullSheet(ballotType) {
          var ballotOl, ballotsToInspect;
          ballotsToInspect = conductorState['ballot_ids'][ballotType];
          ballotListDiv.style.display = 'block';
+         document.body.appendChild(ballotListDiv);
          
          // ballotListDiv.appendChild(document.createTextNode('Ballot order:'));
          // ballotOl = buildOrderedList(ballotsToInspect);
@@ -518,12 +591,13 @@ function displayPullSheet(ballotType) {
 //         // '.slice' is so we can have a non-destructive sort:
 //         ballotListDiv.appendChild(buildOrderedList(ballotsToInspect.slice().sort(function (a, b) {  return a - b;  }))); // numeric sort
 
-         var pullSheetText = document.createTextNode('Ballot Pull Sheet... ('+ballotType+')'); // TODO: pretty
+         var pullSheetText = document.createTextNode('Ballot Pull Sheet... ('+auditTypePrettyName(ballotType)+')');
          var a = newElem('a');
          a.href = '/ballot-pull-sheet-'+ballotType+'.txt';
          a.target = '_blank';
          a.appendChild(pullSheetText);
          ballotListDiv.appendChild(a);
+         ballotListDiv.appendChild(newElem('br'));
 
          //uiState['got_seed'] = true;
    }
@@ -547,6 +621,7 @@ function buildOrderedList(elems) {
 // TODO: better name because there's also 'newBallot':
 
 function makeNewBallotOrReturnResults(ballotType) {
+   return function() {
    // Less diff noise -- TODO:
    getConductorState(function(){ makeNewBallotOrReturnResultsPrime (ballotType)});
 }
@@ -565,6 +640,7 @@ function makeNewBallotOrReturnResultsPrime(ballotType) {
          addBallot(ballotType, ballotIdsLeft[0]);
       }
 
+   }
    }
 }
 
