@@ -25,7 +25,11 @@ Maybe todo:
 
 ## Tests
 
-You can run the tests by starting up the server (see Usage), optionally capturing
+To run the tests, you'll need zerotest:
+
+    pip install zerotest
+
+You can run a "smoketest" by starting up the server (see Usage), optionally capturing
 the debug output (stdout and stderr), and then running these tests.
 
     pytest test/test_reset.py
