@@ -833,7 +833,18 @@ def set_seed():
           [], audit_state['ballot_ids'][ballot_type] = sampler.generate_outputs(seed=audit_state['seed'], with_replacement=False, n=(audit_state['num_ballots_already_sampled']+number_of_ballots_to_interpret[ballot_type]),a=(audit_state['num_ballots_already_sampled']+1),b=audit_state['total_number_of_ballots'][ballot_type],skip=0)
           audit_state['num_ballots_already_sampled'] += number_of_ballots_to_interpret[ballot_type]
           # At least in RI we will be running them in sorted order:
-          audit_state['ballot_ids'][ballot_type] = sorted(audit_state['ballot_ids'][ballot_type])
+          #audit_state['ballot_ids'][ballot_type] = sorted(audit_state['ballot_ids'][ballot_type])
+
+      # This is a special case, due to running several different audit types
+      #   in the 2019 RI pilot:
+      # TODO: find a better place for this kind of configuration (maybe!):
+      if 'ballot_polling' in audit_state['ballot_ids']:
+          x = audit_state['ballot_ids']['ballot_polling']
+          audit_state['ballot_ids']['ballot_polling'] = sorted(x[0:64])+sorted(x[64:(64+8)])+sorted(x[(64+8):(64+8+64)])+sorted(x[(64+8+64):(64+8+64+64)])
+      if 'ballot_comparison' in audit_state['ballot_ids']:
+          x = audit_state['ballot_ids']['ballot_comparison']
+          audit_state['ballot_ids']['ballot_comparison'] = sorted(x[0:50])+sorted(x[50:100])
+
       return '' # jsonify({'ballot_ids': audit_state['ballot_ids'][ballot_type]}) # TODO: do we want to return anything here?
    else:
       return 'Key "seed" is not present', 422
