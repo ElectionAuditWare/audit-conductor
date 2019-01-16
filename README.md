@@ -23,6 +23,17 @@ Maybe todo:
   - (mini)conda
   - Debian/Ubuntu packages
 
+## Upgrades:
+
+If the `.gitmodules` file is updated, run this:
+
+    git submodule sync
+
+Any time one of the submodules might have changed, run
+
+    git submodule update --init --recursive
+
+
 ## Tests
 
 To run the tests, you'll need zerotest:
