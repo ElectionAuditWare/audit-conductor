@@ -1,0 +1,5 @@
+conductor.cfg
+.hypothesis
+.cache
+audit_logs
+scratch_files

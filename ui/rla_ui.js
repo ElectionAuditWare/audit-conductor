@@ -46,9 +46,8 @@ var seedContainer;
 var auditTypeContainer;
 // var finalResultContainer;
 var cvrFileUploadContainer;
-var ballotManifestUploadContainer;
 var ballotListDiv; // rename for consistency?
-var ballotEntriesContainer;
+// var ballotEntriesContainer;
 
 // Couple helpers to make the code shorter:
 function newElem(elemType) {
@@ -64,9 +63,8 @@ window.onload = function() {
    auditTypeContainer = getById('auditTypeContainer');
    //finalResultContainer = getById('finalResultContainer');
    cvrFileUploadContainer = getById('cvrFileUploadContainer');
-   ballotManifestUploadContainer = getById('ballotManifestUploadContainer');
    ballotListDiv = getById('listOfBallotsToPull');
-   ballotEntriesContainer = getById('ballotEntriesContainer');
+   // ballotEntriesContainer = getById('ballotEntriesContainer');
 
    getConductorState(mainLoop);
 /*
@@ -97,20 +95,56 @@ function getConductorState(andThen) {
 var auditSteps = {
       'ballot_polling': [
             maybeGetAuditName,
-            maybeGetBallotManifest,
+            maybeGetBallotManifest('ballot_polling'),
             maybeGetSeed,
+            displayPullSheet('ballot_polling'),
             createButton('Click to enter interpretations'),
-            createFinishedBallots,
-            makeNewBallotOrReturnResults,
+            createFinishedBallots('ballot_polling'),
+            makeNewBallotsUpToNumber(6, 'ballot_polling'),
+            displayAuditStatus('ballot_polling', mainLoop),
          ],
       'ballot_comparison': [
             maybeGetAuditName,
-            maybeGetBallotManifest,
-            maybeGetCVRFile,
+            maybeGetBallotManifest('ballot_comparison'),
+            maybeGetCVRFile('ballot_comparison'),
             maybeGetSeed,
+            displayPullSheet('ballot_comparison'),
             createButton('Click to enter interpretations'),
-            createFinishedBallots,
-            makeNewBallotOrReturnResults,
+            createFinishedBallots('ballot_comparison'),
+            makeNewBallotsUpToNumber(6, 'ballot_comparison'),
+            displayAuditStatus('ballot_comparison', mainLoop),
+         ],
+      'ri_pilot': [
+            maybeGetAuditName,
+            announce('Ballot Polling (Portsmouth) data entry'),
+            maybeGetBallotManifest('ballot_polling'),
+            announce('Ballot Comparison (Bristol) data entry'),
+            maybeGetBallotManifest('ballot_comparison'),
+            maybeGetCVRFile('ballot_comparison'),
+            maybeGetSeed,
+            displayPullSheet('ballot_polling'),
+            displayPullSheet('ballot_comparison'),
+            createButton('Click to enter Ballot Polling (Portsmouth) interpretations'),
+            createFinishedBallots('ballot_polling'),
+
+            createButton('Begin Portsmouth scale method (64 ballots):'),
+            makeNewBallotsUpToNumber(64, 'ballot_polling'),
+            createButton('Begin Portsmouth counting method (8 ballots):'),
+            makeNewBallotsUpToNumber(64+8, 'ballot_polling'),
+            createButton('Begin Portsmouth ruler method (64 ballots):'),
+            makeNewBallotsUpToNumber(64+8+64, 'ballot_polling'),
+            createButton('Begin Portsmouth k-cut method (64 ballots):'),
+            makeNewBallotsUpToNumber(64+8+64+64, 'ballot_polling'),
+            displayAuditStatus('ballot_polling', mainLoop),
+            createButton('Click to enter Ballot Comparison (Bristol) interpretations'),
+            createFinishedBallots('ballot_comparison'),
+
+            createButton('Begin Bristol one-contest (50 ballots):'),
+            makeNewBallotsUpToNumber(50, 'ballot_comparison'),
+            createButton('Begin Bristol ten-contest (50 ballots):'),
+            makeNewBallotsUpToNumber(100, 'ballot_comparison'),
+
+            displayAuditStatus('ballot_comparison', mainLoop),
          ],
    };
 
@@ -129,6 +163,8 @@ function maybeGetAuditType(andThen) {
    }
 };
 
+// These 'maybeGet*' functions are repetitive -- make a helper function for them:
+
 function maybeGetAuditName() {
    //if ( ! uiState['got_audit_name']) {
       var auditName = conductorState['audit_name'];
@@ -141,30 +177,38 @@ function maybeGetAuditName() {
    //}
 };
 
-function maybeGetBallotManifest() {
+function maybeGetBallotManifest(ballotType) {
+   return function () {
    //if ( ! uiState['got_ballot_manifest'] ) {
-      if (conductorState['ballot_manifest'] === null) {
-         uploadBallotManifest(); // TODO: when?
+      // if (conductorState['ballot_manifest'] === null) {
+      if (conductorState['ballot_manifest'][ballotType] === undefined) {
+         uploadBallotManifest(ballotType); // TODO: when?
       } else {
-         displayBallotManifest();
+         displayBallotManifest(ballotType);
          mainLoop();
       }
    //}
+   }
 };
 
-function maybeGetCVRFile() {
+function maybeGetCVRFile(ballotType) {
+   return function () {
    //if ((conductorState['audit_type_name'] == 'ballot_comparison') && ( ! uiState['got_cvr_file'] )) {
-      if (conductorState['cvr_hash'] === null) {
-         uploadCVRFile();
+      //if (conductorState['cvr_hash'] === null) {
+      document.body.appendChild(cvrFileUploadContainer);
+      if (conductorState['cvr_hash'][ballotType] === undefined) {
+         uploadCVRFile(ballotType);
       } else {
-         displayCVRFile();
+         displayCVRFile(ballotType);
          mainLoop();
       }
    //}
+   }
 };
 
 function maybeGetSeed() {
    //if ( ! uiState['got_seed'] ) {
+      document.body.appendChild(seedContainer);
       if (conductorState['seed'] === null) {
          enterSeed();
       } else {
@@ -196,6 +240,7 @@ function auditTypePrettyName(realName) {
    var prettyNames = {
       'ballot_polling': 'Ballot Polling',
       'ballot_comparison': 'Ballot Comparison',
+      'ri_pilot': 'RI 2019 Pilot',
       };
    return prettyNames[realName] || realName;
 };
@@ -214,6 +259,18 @@ function createButton(buttonMessage) {
          mainLoop();
       };
       document.body.appendChild(container);
+   }
+};
+
+
+function announce(announcement) {
+   return function() {
+      var container = newElem('div');
+      container.classList.add('container');
+      var msg = document.createTextNode(announcement);
+      container.appendChild(msg);
+      document.body.appendChild(container);
+      mainLoop();
    }
 };
 
@@ -299,16 +356,35 @@ function displayAuditName() {
    //uiState['got_audit_name'] = true;
 }
 
-function uploadBallotManifest() {
+function uploadBallotManifest(ballotType) {
+   makeBallotManifestUploadContainer(ballotType);
+};
 
-   ballotManifestUploadContainer.style.display = 'block';
+function makeBallotManifestUploadContainer(ballotType) {
+   var container = newElem('div');
+   container.classList.add('container');
+   var p = newElem('p');
+   p.innerHTML = 'Upload a Ballot Manifest';
+   container.appendChild(p);
+   var uploadForm = newElem('form');
+   uploadForm.setAttribute('method', 'post');
+   uploadForm.setAttribute('enctype', 'multipart/form-data');
+   var fieldSet1 = newElem('fieldset');
+   var fieldSet2 = newElem('fieldset');
+   var fileInput = newElem('input');
+   fileInput.type = 'file';
+   fileInput.name = 'file';
+   var fileLabel = newElem('label');
+   fileLabel.for = 'file'; // works?
+   fileLabel.innerHTML = 'Select a file: ';
+   var uploadButton = newElem('button');
+   uploadButton.id = 'uploadBallotManifestButton'; // TODO: don't need (or won't)
+   uploadButton.innerHTML = 'Upload';
+   uploadButton.type = 'button'; // so it doesn't submit the form
 
-
-   var uploadButton = getById('uploadBallotManifestButton');
-   var uploadForm = getById('uploadBallotManifestForm');
-
-   $(uploadButton).click(function() {
+   uploadButton.onclick = function() {
       var form_data = new FormData(uploadForm);
+      form_data.append('contest_name', ballotType);
       $.ajax({
          type: 'POST',
          url: '/upload-ballot-manifest',
@@ -316,26 +392,80 @@ function uploadBallotManifest() {
          contentType: false,
          cache: false,
          processData: false,
-         success: function() { // ballotM) {
-            // console.log(ballotM);
-            // ballotManifest = ballotM;
+         success: function() {
 
             getConductorState(function() {
-               displayBallotManifest();
+               container.classList.add('complete');
+               container.innerHTML = ballotManifestDisplayedText(ballotType);
                mainLoop();
             });
          },
       }).fail(reportError);
-   });
-}
+   };
 
-function displayBallotManifest () {
+
+
+   fieldSet1.appendChild(fileLabel);
+   fieldSet1.appendChild(fileInput);
+   fieldSet2.appendChild(uploadButton);
+   uploadForm.appendChild(fieldSet1);
+   uploadForm.appendChild(fieldSet2);
+   container.appendChild(uploadForm);
+
+
+
+
+
+   //var uploadButton = getById('uploadBallotManifestButton');
+   //var uploadForm = getById('uploadBallotManifestForm');
+
+
+
+
+   document.body.appendChild(container);
+};
+
+/*
+      <div id="ballotManifestUploadContainer" class="container" style="display:none">
+         <p>Upload a Ballot Manifest</p>
+         <form id="uploadBallotManifestForm" method="post" enctype="multipart/form-data">
+            <fieldset>
+               <label for="file">Select a file</label>
+               <input name="file" type="file">
+            </fieldset>
+            <fieldset>
+               <button id="uploadBallotManifestButton" type="button">Upload</button>
+            </fieldset>
+         </form>
+
+      </div>
+*/
+
+
+
+
+function displayBallotManifest (ballotType) {
+   var div = newElem('div');
+   div.classList.add('complete');
+   div.classList.add('container');
+   div.innerHTML = ballotManifestDisplayedText(ballotType);
+   document.body.appendChild(div);
+/*
    ballotManifestUploadContainer.style.display = 'block';
    ballotManifestUploadContainer.innerHTML = '(Ballot Manifest Added)';
    ballotManifestUploadContainer.classList.add('complete');
+*/
+
+
+   // In the future, create it dynamically:
+   // document.body.appendChild(ballotManifestUploadContainer);
 
    //uiState['got_ballot_manifest'] = true;
 }
+
+function ballotManifestDisplayedText(ballotType) {
+   return 'Ballot Manifest added: '+auditTypePrettyName(ballotType);
+};
 
 // https://stackoverflow.com/questions/9716468/pure-javascript-a-function-like-jquerys-isnumeric
 function isNumeric(n) {
@@ -385,7 +515,7 @@ function ballotNumToLocation(fullManifest, ballotNum) {
    } while (finished == false);
 }
 
-function uploadCVRFile() {
+function uploadCVRFile(ballotType) {
    cvrFileUploadContainer.style.display = 'block';
 
    var uploadButton = getById('uploadCVRButton');
@@ -393,9 +523,10 @@ function uploadCVRFile() {
 
    $(uploadButton).click(function() {
       var form_data = new FormData(uploadForm);
+      form_data.append('contest_name', ballotType);
       $.ajax({
          type: 'POST',
-         url: '/upload-cvr-file',
+         url: '/upload-cvr-file', // ?contest_name='+ballotType,
          data: form_data,
          contentType: false,
          cache: false,
@@ -403,6 +534,7 @@ function uploadCVRFile() {
          success: function(data) {
             console.log('Success!');
             getConductorState(function() {
+               displayCVRFile(ballotType);
                mainLoop();
             });
          },
@@ -411,7 +543,7 @@ function uploadCVRFile() {
 
 }
 
-function displayCVRFile() {
+function displayCVRFile(ballotType) {
    cvrFileUploadContainer.style.display = 'block';
    cvrFileUploadContainer.innerHTML = '(CVR file uploaded)';
    cvrFileUploadContainer.classList.add('complete');
@@ -451,30 +583,37 @@ function enterSeed() {
 function displaySeed() {
 // TODO: this can be split out into a couple of functions:
 
-         var ballotOl, ballotsToInspect;
-         ballotsToInspect = conductorState['ballot_ids'];
 
 
          seedContainer.innerHTML = 'Seed: <strong>'+conductorState['seed']+'</strong>';
          seedContainer.classList.add('complete');
+}
+
+function displayPullSheet(ballotType) {
+   return function () {
+         var ballotOl, ballotsToInspect;
+         ballotsToInspect = conductorState['ballot_ids'][ballotType];
          ballotListDiv.style.display = 'block';
+         document.body.appendChild(ballotListDiv);
          
          // ballotListDiv.appendChild(document.createTextNode('Ballot order:'));
          // ballotOl = buildOrderedList(ballotsToInspect);
          // ballotListDiv.appendChild(ballotOl);
          
-         ballotListDiv.appendChild(document.createTextNode('Sorted order:'));
-         // '.slice' is so we can have a non-destructive sort:
-         ballotListDiv.appendChild(buildOrderedList(ballotsToInspect.slice().sort(function (a, b) {  return a - b;  }))); // numeric sort
+//         ballotListDiv.appendChild(document.createTextNode('Sorted order:'));
+//         // '.slice' is so we can have a non-destructive sort:
+//         ballotListDiv.appendChild(buildOrderedList(ballotsToInspect.slice().sort(function (a, b) {  return a - b;  }))); // numeric sort
 
-         var pullSheetText = document.createTextNode('Ballot Pull Sheet...');
+         var pullSheetText = document.createTextNode('Ballot Pull Sheet... ('+auditTypePrettyName(ballotType)+')');
          var a = newElem('a');
-         a.href = '/ballot-pull-sheet.txt';
+         a.href = '/ballot-pull-sheet-'+ballotType+'.txt';
          a.target = '_blank';
          a.appendChild(pullSheetText);
          ballotListDiv.appendChild(a);
+         ballotListDiv.appendChild(newElem('br'));
 
-         //uiState['got_seed'] = true;
+         mainLoop();
+   }
 }
 
 function buildOrderedList(elems) {
@@ -494,34 +633,32 @@ function buildOrderedList(elems) {
 
 // TODO: better name because there's also 'newBallot':
 
-function makeNewBallotOrReturnResults() {
-   // Less diff noise -- TODO:
-   getConductorState(makeNewBallotOrReturnResultsPrime);
-}
-
-function makeNewBallotOrReturnResultsPrime() {
-   var ballotIdsLeft = conductorState['ballot_ids'].filter(function(x) {
-      return !(conductorState['all_interpretations'].map(function(y) { return y['ballot_id']; }).includes(x));
-   });
-   if (ballotIdsLeft.length == 0) {
-      displayAuditStatus(function(){});
-   } else {
-
-      if (debugMode) {
-         displayAuditStatus(function() { addBallot(ballotIdsLeft[0]) });
+function makeNewBallotsUpToNumber(numberToGoUpTo, ballotType) {
+   return function() { getConductorState(function() {
+      var ballotIdsLeft = conductorState['ballot_ids'][ballotType].filter(function(x) {
+         return !(conductorState['all_interpretations'][ballotType].map(function(y) { return y['ballot_id']; }).includes(x));
+      });
+      // '>=' because ballots are 1-indexed and arrays are zero-indexed:
+      if ((ballotIdsLeft.length == 0) || (conductorState['ballot_ids'][ballotType].indexOf(ballotIdsLeft[0]) >= numberToGoUpTo)) {
+         mainLoop();
       } else {
-         addBallot(ballotIdsLeft[0]);
+   
+         if (debugMode) {
+            displayAuditStatus(ballotType, function() { addBallot(numberToGoUpTo, ballotType, ballotIdsLeft[0]) })();
+         } else {
+            addBallot(numberToGoUpTo, ballotType, ballotIdsLeft[0]);
+         }
+   
       }
-
-   }
+   })};
 }
 
-function addBallot(ballot_id) {
-      var ballotDiv = newBlankBallot(ballot_id);
+function addBallot(numToGoUpTo, ballotType, ballot_id) {
+      var ballotDiv = newBlankBallot(ballotType, ballot_id);
 
       timestampEvent({'event': 'add_ballot', 'ballot_id': ballot_id});
 
-      ballotDiv.appendChild(newInnerForm(ballot_id));
+      ballotDiv.appendChild(newInnerForm(numToGoUpTo, ballotType, ballot_id));
       ballotDiv.classList.add('inProgress');
 
       // We append to body so we can interleave status in debug mode:
@@ -530,7 +667,8 @@ function addBallot(ballot_id) {
       scrollToTheBottom();
 }
 
-function displayAuditStatus(andThen) {
+function displayAuditStatus(ballotType, andThen) {
+   return function() {
       var finalResultContainer = newElem('div');
       var progressBar = document.createTextNode('Computing audit status...')
       finalResultContainer.appendChild(progressBar);
@@ -541,34 +679,35 @@ function displayAuditStatus(andThen) {
       $.ajax({
          url: '/get-audit-status',
          method: 'POST',
-         data: JSON.stringify({}),
+         data: JSON.stringify({'contest_type': ballotType}),
          contentType: 'application/json'
       }).done(function(msg) {
          finalResultContainer.removeChild(progressBar);
          finalResultContainer.innerHTML = 'Audit status:';
          msg['outcomes'].forEach(function(outcome) {
             // 'all_contests' should probably be a dictionary so we don't need to do this filter[0]:
-            var contest = conductorState['all_contests'].filter(function(x) {
+            var contest = conductorState['all_contests'][ballotType].filter(function(x) {
                return x['id'] == outcome['contest_id'];
             })[0];
 //OUT
-            finalResultContainer.innerHTML += '<p>Contest: <strong>'+contest['title']+'</strong> Status: <strong>'+outcome['status']+'</strong> ('+outcome.progress+')</p>';
+            finalResultContainer.innerHTML += '<p>Contest: <strong>'+contest['title']+'</strong> Status: <strong>'+outcome['status']+'</strong> <br>'+outcome.progress+'</p>';
          });
-         finalResultContainer.innerHTML += '<br /><br /><a href="/reset">Reset and audit another contest</a>';
+         // finalResultContainer.innerHTML += '<br /><br /><a href="/reset">Reset and audit another contest</a>';
          finalResultContainer.style.display = 'block';
          scrollToTheBottom();
          andThen();
       }).fail(reportError);
-
+   }
 };
 
 
 function scrollToTheBottom() {
-   window.scrollTo(0,document.body.scrollHeight);
+   // This was found to be distracting/confusing!:
+   // window.scrollTo(0,document.body.scrollHeight);
 };
 
 // todo: not 'blank': 'newBallotDiv'?:
-function newBlankBallot(ballot_id) {
+function newBlankBallot(ballotType, ballot_id) {
    var ballot, numberLabel, innerForm, ballotNumber;
    ballot = newElem('div');
    ballot.classList.add('ballot', 'container');
@@ -576,8 +715,8 @@ function newBlankBallot(ballot_id) {
 
    numberLabel.classList.add('numberLabel', 'inProgress');
    //numberLabel.innerText = 'Ballot # '+(conductorState['ballot_ids'].indexOf(ballot_id)+1)+', ID: '+ballot_id+', Location: '+ballotNumToLocation(conductorState['ballot_manifest'], ballot_id); // TODO: 'innerText' may not be cross-browser
-   var ballotNum = conductorState['ballot_ids'].indexOf(ballot_id) + 1;
-   numberLabel.innerText = ballotNumToLocation(conductorState['ballot_manifest'], ballot_id) + ' (#'+ballotNum+')'; // TODO: 'innerText' may not be cross-browser
+   var ballotNum = conductorState['ballot_ids'][ballotType].indexOf(ballot_id) + 1;
+   numberLabel.innerText = ballotNumToLocation(conductorState['ballot_manifest'][ballotType], ballot_id) + ' (#'+ballotNum+')'; // TODO: 'innerText' may not be cross-browser
 
    numberLabel.onclick = function(event) {
       // This work in all IEs we need it to?:
@@ -610,20 +749,23 @@ function newBlankBallot(ballot_id) {
 function newCompleteBallot(ballot_id) {
 };
 
-function createFinishedBallots() {
-   conductorState['all_interpretations'].forEach(function(interpretationJSON) {
-      var ballotDiv = newBlankBallot(interpretationJSON['ballot_id']);
+function createFinishedBallots(ballotType) {
+   return function() {
+   conductorState['all_interpretations'][ballotType].forEach(function(interpretationJSON) {
+      var ballotDiv = newBlankBallot(ballotType, interpretationJSON['ballot_id']);
 
-      ballotDiv.appendChild(candidateSelectionList(interpretationJSON));
+      ballotDiv.appendChild(candidateSelectionList(ballotType, interpretationJSON));
       ballotDiv.classList.add('complete');
 
-      ballotEntriesContainer.appendChild(ballotDiv);
+      //ballotEntriesContainer.appendChild(ballotDiv);
+      document.body.appendChild(ballotDiv);
    });
    //uiState['created_finished_ballots'] = true;
    mainLoop();
+   }
 };
 
-function newInnerForm(ballot_id) {
+function newInnerForm(numToGoUpTo, ballotType, ballot_id) {
 
    var innerForm, saveButton;
    innerForm = newElem('div');
@@ -633,7 +775,7 @@ function newInnerForm(ballot_id) {
  
    innerForm.classList.add('innerForm');
 
-   conductorState['all_contests'].forEach(function(contest) {
+   conductorState['all_contests'][ballotType].forEach(function(contest) {
       var contestBox = newRaceCheckbox(ballot_id, contest.id, contest.title, contest.candidates);
       innerForm.appendChild(contestBox);
    });
@@ -645,17 +787,17 @@ function newInnerForm(ballot_id) {
 
       timestampEvent({'event': 'click_first_save', 'ballot_id': ballot_id});
 
-      conductorState['all_contests'].forEach(function(contest) {
+      conductorState['all_contests'][ballotType].forEach(function(contest) {
          var x = document.querySelector('input[name="'+contestCheckboxName(ballot_id, contest.id)+'"]:checked').value;
          dat['contests'][contest.id] = x;
       });
-      innerForm.parentNode.appendChild(newInterpretationConfirmation(dat));
+      innerForm.parentNode.appendChild(newInterpretationConfirmation(numToGoUpTo, ballotType, dat));
       innerForm.parentNode.removeChild(innerForm); // This has to be after the other '.parentNode's or they'll be null
    };
    return innerForm;
 };
 
-function newInterpretationConfirmation(interpretationJSON) {
+function newInterpretationConfirmation(numToGoUpTo, ballotType, interpretationJSON) {
    var dat = interpretationJSON;
    var confirmationDiv = newElem('div');
    var confirmButton = newElem('button');
@@ -674,7 +816,7 @@ function newInterpretationConfirmation(interpretationJSON) {
    confirmButton.onclick = function(event) {
       $.ajax({
          url: '/add-interpretation',
-         data: JSON.stringify({'interpretation': dat}),
+         data: JSON.stringify({'interpretation': dat, 'contest_type': ballotType}),
          // dataType: 'json',
          method: 'POST',
          contentType: 'application/json'
@@ -690,7 +832,7 @@ function newInterpretationConfirmation(interpretationJSON) {
          //   on each interpretation, since we're running for a fixed number of
          //   ballots. In most audits, though, you'd want to check for that
          //   here:
-         makeNewBallotOrReturnResults(); // TODO: don't do this if you're clicking to save a second time and we already have an unfinished one
+         makeNewBallotsUpToNumber(numToGoUpTo, ballotType)(); // TODO: don't do this if you're clicking to save a second time and we already have an unfinished one
          // window.event.stopPropagation();
          event.stopPropagation(); // Maybe unnecessary
       }).fail(reportError);
@@ -699,35 +841,45 @@ function newInterpretationConfirmation(interpretationJSON) {
    //   That's intentional, although it could change based on the spec:
    rejectButton.onclick = function() {
       timestampEvent({'event': 'click_reject', 'ballot_id': ballot_id});
-      confirmationDiv.parentNode.appendChild(newInnerForm(ballot_id));
+      confirmationDiv.parentNode.appendChild(newInnerForm(numToGoUpTo, ballotType, ballot_id));
       confirmationDiv.parentNode.removeChild(confirmationDiv);
    };
 
-   confirmationDiv.appendChild(candidateSelectionList(interpretationJSON));
+   confirmationDiv.appendChild(candidateSelectionList(ballotType, interpretationJSON));
    confirmationDiv.appendChild(rejectButton);
    confirmationDiv.appendChild(confirmButton);
    return confirmationDiv;
 }
 
-function candidateSelectionList(interpretationJSON) {
+function candidateSelectionList(ballotType, interpretationJSON) {
    var resultList = [];
 /*
    for (var contestId in interpretationJSON['contests']) {
       resultList.push(contestId + ': ' + interpretationJSON['contests'][contestId]);
    }
 */
-   conductorState['all_contests'].forEach(function(contest) {
-      resultList.push(contest.title + ': ' + interpretationJSON['contests'][contest.id]);
+   conductorState['all_contests'][ballotType].forEach(function(contest) {
+      resultList.push(contest.title + ': ' + prettifyChoice(interpretationJSON['contests'][contest.id]));
    });
    return buildOrderedList(resultList);
 };
 
 function prettifyChoice(choiceName) {
+   // the entry with "DEM" should be superfluous, see what follows
    var choiceMap = {
+      'DEM David N. Cicilline (13215)': 'David N. Cicilline',
+      'David N. Cicilline (13215)': 'David N. Cicilline',
       'Write-in': 'Write-in candidate',
       'undervote': 'No selection (undervote)',
       'overvote': 'Overvote',
+      'Representative in Congress District 1 (13213) ': 'Rep. in Congress Dist. 1',
+      '1. RHODE ISLAND SCHOOL BUILDINGS - $250,000,000': 'Question 1 (schools)',
+      '2. HIGHER EDUCATION FACILITIES - $70,000,000': 'Question 2 (higher ed)',
+      '3. GREEN ECONOMY AND CLEAN WATER - $47,300,000': 'Question 3 (green econ)',
       };
+   if (['DEM ', 'REP ', 'MOD ', 'Com ', 'Ind '].includes(choiceName.substring(0,4))) {
+      choiceName = choiceName.substring(4);
+   };
    return choiceMap[choiceName] || choiceName;
 };
 
@@ -754,7 +906,7 @@ function newRaceCheckbox(ballot_id, race_id, race_title, race_choices) {
       checkbox.value = choice;
 
       label = newElem('label');
-      label.innerHTML = choice; // again, careful!
+      label.innerHTML = prettifyChoice(choice); // again, careful!
       label.setAttribute('for', checkbox.id);
       label.classList.add('choiceCheckboxLabel');
 
