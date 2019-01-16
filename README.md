@@ -25,7 +25,31 @@ Maybe todo:
 
 ## Tests
 
-You can run the tests by calling
+To run the tests, you'll need zerotest:
+
+    pip install zerotest
+
+You can run a "smoketest" of the server code by starting up the server (see Usage),
+optionally capturing
+the debug output (stdout and stderr), and then running these tests.
+It currently makes a few dozen HTTP requests to set up the server and
+enter 6 ballot interpretations, and checks the exact json responses to every request.
+
+    pytest test/test_reset.py
+    pytest test/test_comparison_setup.py
+    # Manually visit http://127.0.0.1:5000 and upload the Bristol Manifest and CVR
+    pytest test/test_comparison_acvrs.py
+
+    # manually visit http://127.0.0.1:5000 and click on "Click to enter interpretations", and wait
+    # for the results of "Computing audit status..." to be calculated
+    # Stop the server if desired to stop logging stdout/stderr
+
+TODO: Automate the file uploads
+      Make it easier to ignore unimportant differences or update tests
+        when the format of the json responses changes.
+      Use Hypothesis to chain the tests together so plain old pytest would work
+
+Older test of SUITE:
 
     pytest test/test.py
 
