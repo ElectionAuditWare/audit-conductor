@@ -587,7 +587,6 @@ function displaySeed() {
 
          seedContainer.innerHTML = 'Seed: <strong>'+conductorState['seed']+'</strong>';
          seedContainer.classList.add('complete');
-         mainLoop();
 }
 
 function displayPullSheet(ballotType) {
