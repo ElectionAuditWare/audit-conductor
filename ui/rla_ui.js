@@ -475,7 +475,7 @@ function isNumeric(n) {
 
 // TODO: WRITE TESTS FOR THIS FUNCTION!:
 // Particularly edge cases like first and last of a batch etc:
-function ballotNumToLocation(fullManifest, ballotNum) {
+function ballotNumToLocation(ballotType, fullManifest, ballotNum) {
    var n, manifest, finished;
    n = ballotNum;
    manifest = fullManifest.slice(); // copy-by-value so we can '.shift()'
@@ -487,6 +487,9 @@ function ballotNumToLocation(fullManifest, ballotNum) {
          finished = true; // needed?
          var s = 'Batch ID: '+ row['batch_id'];
          s += ' ballot ' + n;
+         if (typeof(conductorState['imprinted_ids'][ballotType]) != 'undefined') {
+            s += ', Imprinted ID: '+conductorState['imprinted_ids'][ballotType][ballotNum];
+         }
 /*
          s += ', batch number: ' + n; // TODO: more descriptive?
          if (isNumeric(row['first_imprinted_id'])) {
@@ -717,7 +720,7 @@ function newBlankBallot(ballotType, ballot_id) {
    numberLabel.classList.add('numberLabel', 'inProgress');
    //numberLabel.innerText = 'Ballot # '+(conductorState['ballot_ids'].indexOf(ballot_id)+1)+', ID: '+ballot_id+', Location: '+ballotNumToLocation(conductorState['ballot_manifest'], ballot_id); // TODO: 'innerText' may not be cross-browser
    var ballotNum = conductorState['ballot_ids'][ballotType].indexOf(ballot_id) + 1;
-   numberLabel.innerText = ballotNumToLocation(conductorState['ballot_manifest'][ballotType], ballot_id) + ' (#'+ballotNum+')'; // TODO: 'innerText' may not be cross-browser
+   numberLabel.innerText = ballotNumToLocation(ballotType, conductorState['ballot_manifest'][ballotType], ballot_id) + ' (#'+ballotNum+')'; // TODO: 'innerText' may not be cross-browser
 
    numberLabel.onclick = function(event) {
       // This work in all IEs we need it to?:

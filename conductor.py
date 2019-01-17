@@ -483,6 +483,9 @@ default_audit_state = {
       'ballot_polling': all_contests_portsmouth,
       'ballot_comparison': all_contests_bristol,
       },
+   # in the future, may (or may not) want to store all ballot location info in 'audit_state':
+   'imprinted_ids': {
+      },
 
 #       [
 #       {'contest_id': 'lieutenant_governor',
@@ -836,6 +839,12 @@ def set_seed():
           audit_state['num_ballots_already_sampled'] += number_of_ballots_to_interpret[ballot_type]
           # At least in RI we will be running them in sorted order:
           #audit_state['ballot_ids'][ballot_type] = sorted(audit_state['ballot_ids'][ballot_type])
+
+      for contest_name in audit_state['cvrs'].keys():
+          imprint_dict = {}
+          for ballot_id in audit_state['ballot_ids'][contest_name]:
+              imprint_dict[ballot_id] = audit_state['cvrs'][contest_name][ballot_id-1]['Serial Number']
+          audit_state['imprinted_ids'][contest_name] = imprint_dict
 
       # This is a special case, due to running several different audit types
       #   in the 2019 RI pilot:
