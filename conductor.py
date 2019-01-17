@@ -56,7 +56,7 @@ Interpretation = Dict[str, List[Dict[str, str]]]
 #   (Is it repetitive to track this?)
 
 def add_non_candidate_choices(l):
-    return l + ["overvote", "undervote", "Write-in"]
+    return list(set(l).union({"overvote", "undervote", "Write-in"}))
 
 # CONFIGURATION STATE
 
@@ -72,7 +72,6 @@ number_of_ballots_to_interpret = {
 ## Portsmouth ballot polling audit
 
 all_contests_portsmouth = [
-
       {'id': 'governor',
        'title': 'Governor',
        'candidates': ['DEM Gina M. Raimondo', 'MOD William H. Gilbert', 'REP Allan W. Fung', 'Com Anne Armstrong', 'Ind Luis Daniel Munoz', 'Ind Joseph A. Trillo'],
@@ -675,7 +674,7 @@ def get_ballot_comparison_results():
         contest_result = list(filter(lambda c: c['contest_id'] == contest_id, reported_results_obj))[0]
 
     # TODO: also replace these lines with getting directly from CVR (is that the usual way to do it?):
-        all_contestant_names = list(set(contest['candidates']).union({ i['contests'][contest['id']] for i in audit_state['all_interpretations']['ballot_comparison']}))
+        all_contestant_names = list(set(contest['candidates']).union({ i['contests'][contest['id']] for i in audit_state['all_interpretations']['ballot_comparison'] if contest['id'] in i['contests']}))
         all_contestant_names = add_non_candidate_choices(all_contestant_names)
 
         all_contestants = { name: make_contestant(name) for name in all_contestant_names }
@@ -706,14 +705,17 @@ def get_ballot_comparison_results():
     
         ballots = []
         for interpretation in audit_state['all_interpretations']['ballot_comparison']:
-            ballot = WAVEelection.Ballot()
-            ballot.set_actual_value(all_contestants[interpretation['contests'][contest['id']]])
-            ballot.set_audit_seq_num(interpretation['ballot_id'])
-            # TODO: this is one way to do the ballot number but it might not be (probably isn't) the best:
-            matching_cvr = audit_state['cvrs']['ballot_comparison'][interpretation['ballot_id']]
-            ballot.set_reported_value(all_contestants[matching_cvr[contest['title']]])
-            ballots.append(ballot)
-        final_ballot = len(ballots) >= number_of_ballots_to_interpret['ballot_comparison']
+            if contest['id'] in interpretation['contests']:
+                ballot = WAVEelection.Ballot()
+                # TODO:
+                ballot.set_actual_value(all_contestants[interpretation['contests'][contest['id']]])
+                ballot.set_audit_seq_num(interpretation['ballot_id'])
+                # TODO: this is one way to do the ballot number but it might not be (probably isn't) the best:
+                matching_cvr = audit_state['cvrs']['ballot_comparison'][interpretation['ballot_id']]
+                ballot.set_reported_value(all_contestants[matching_cvr[contest['title']]])
+                ballots.append(ballot)
+        # TODO: second condition is a special case for the RI audit, where not every ballot has every contest (but they're all on the last one):
+        final_ballot = (len(ballots) >= number_of_ballots_to_interpret['ballot_comparison']) or (audit_state['ballot_ids']['ballot_comparison'][-1] == audit_state['all_interpretations']['ballot_comparison'][-1]['ballot_id'])
         print("DEBUG: ballots: %d final ballot: %s" %(len(ballots),final_ballot))
         if (final_ballot):
             rla.recompute(ballots, reported_results)

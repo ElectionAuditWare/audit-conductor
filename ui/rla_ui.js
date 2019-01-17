@@ -10,7 +10,7 @@
 
 (function(){
 
-var debugMode = true;
+var debugMode = false; // true;
 
 if (debugMode) {
    //alert('Note: running in debug mode!');
@@ -111,6 +111,7 @@ var auditSteps = {
             displayPullSheet('ballot_comparison'),
             createButton('Click to enter interpretations'),
             createFinishedBallots('ballot_comparison'),
+            makeNewBallotsUpToNumber(3, 'ballot_comparison', ["attorney_general"]),
             makeNewBallotsUpToNumber(6, 'ballot_comparison'),
             displayAuditStatus('ballot_comparison', mainLoop),
          ],
@@ -140,7 +141,7 @@ var auditSteps = {
             createFinishedBallots('ballot_comparison'),
 
             createButton('Begin Bristol one-contest (50 ballots):'),
-            makeNewBallotsUpToNumber(50, 'ballot_comparison'),
+            makeNewBallotsUpToNumber(50, 'ballot_comparison', ['issue_2']),
             createButton('Begin Bristol ten-contest (50 ballots):'),
             makeNewBallotsUpToNumber(100, 'ballot_comparison'),
 
@@ -633,7 +634,7 @@ function buildOrderedList(elems) {
 
 // TODO: better name because there's also 'newBallot':
 
-function makeNewBallotsUpToNumber(numberToGoUpTo, ballotType) {
+function makeNewBallotsUpToNumber(numberToGoUpTo, ballotType, optionalListOfContests) {
    return function() { getConductorState(function() {
       var ballotIdsLeft = conductorState['ballot_ids'][ballotType].filter(function(x) {
          return !(conductorState['all_interpretations'][ballotType].map(function(y) { return y['ballot_id']; }).includes(x));
@@ -644,21 +645,21 @@ function makeNewBallotsUpToNumber(numberToGoUpTo, ballotType) {
       } else {
    
          if (debugMode) {
-            displayAuditStatus(ballotType, function() { addBallot(numberToGoUpTo, ballotType, ballotIdsLeft[0]) })();
+            displayAuditStatus(ballotType, function() { addBallot(numberToGoUpTo, ballotType, ballotIdsLeft[0], optionalListOfContests) })();
          } else {
-            addBallot(numberToGoUpTo, ballotType, ballotIdsLeft[0]);
+            addBallot(numberToGoUpTo, ballotType, ballotIdsLeft[0], optionalListOfContests);
          }
    
       }
    })};
 }
 
-function addBallot(numToGoUpTo, ballotType, ballot_id) {
+function addBallot(numToGoUpTo, ballotType, ballot_id, optionalListOfContests) {
       var ballotDiv = newBlankBallot(ballotType, ballot_id);
 
       timestampEvent({'event': 'add_ballot', 'ballot_id': ballot_id});
 
-      ballotDiv.appendChild(newInnerForm(numToGoUpTo, ballotType, ballot_id));
+      ballotDiv.appendChild(newInnerForm(numToGoUpTo, ballotType, ballot_id, optionalListOfContests));
       ballotDiv.classList.add('inProgress');
 
       // We append to body so we can interleave status in debug mode:
@@ -751,21 +752,21 @@ function newCompleteBallot(ballot_id) {
 
 function createFinishedBallots(ballotType) {
    return function() {
-   conductorState['all_interpretations'][ballotType].forEach(function(interpretationJSON) {
-      var ballotDiv = newBlankBallot(ballotType, interpretationJSON['ballot_id']);
+      conductorState['all_interpretations'][ballotType].forEach(function(interpretationJSON) {
+         var ballotDiv = newBlankBallot(ballotType, interpretationJSON['ballot_id']);
 
-      ballotDiv.appendChild(candidateSelectionList(ballotType, interpretationJSON));
-      ballotDiv.classList.add('complete');
+         ballotDiv.appendChild(candidateSelectionList(ballotType, interpretationJSON)); //, optionalListOfContests));
+         ballotDiv.classList.add('complete');
 
-      //ballotEntriesContainer.appendChild(ballotDiv);
-      document.body.appendChild(ballotDiv);
-   });
-   //uiState['created_finished_ballots'] = true;
-   mainLoop();
+         //ballotEntriesContainer.appendChild(ballotDiv);
+         document.body.appendChild(ballotDiv);
+      });
+      //uiState['created_finished_ballots'] = true;
+      mainLoop();
    }
 };
 
-function newInnerForm(numToGoUpTo, ballotType, ballot_id) {
+function newInnerForm(numToGoUpTo, ballotType, ballot_id, optionalListOfContests) {
 
    var innerForm, saveButton;
    innerForm = newElem('div');
@@ -775,7 +776,18 @@ function newInnerForm(numToGoUpTo, ballotType, ballot_id) {
  
    innerForm.classList.add('innerForm');
 
-   conductorState['all_contests'][ballotType].forEach(function(contest) {
+   var contests = conductorState['all_contests'][ballotType];
+
+   // TODO: check if there's one that's not even present (i.e. one we request
+   //   that's not there)
+   if (typeof(optionalListOfContests) != 'undefined') {
+      contests = contests.filter(function(c) {
+         return optionalListOfContests.includes(c['id']);
+      })
+   };
+
+   // TODO: filter this in the case of the single contest
+   contests.forEach(function(contest) {
       var contestBox = newRaceCheckbox(ballot_id, contest.id, contest.title, contest.candidates);
       innerForm.appendChild(contestBox);
    });
@@ -787,17 +799,17 @@ function newInnerForm(numToGoUpTo, ballotType, ballot_id) {
 
       timestampEvent({'event': 'click_first_save', 'ballot_id': ballot_id});
 
-      conductorState['all_contests'][ballotType].forEach(function(contest) {
+      contests.forEach(function(contest) {
          var x = document.querySelector('input[name="'+contestCheckboxName(ballot_id, contest.id)+'"]:checked').value;
          dat['contests'][contest.id] = x;
       });
-      innerForm.parentNode.appendChild(newInterpretationConfirmation(numToGoUpTo, ballotType, dat));
+      innerForm.parentNode.appendChild(newInterpretationConfirmation(numToGoUpTo, ballotType, dat, optionalListOfContests));
       innerForm.parentNode.removeChild(innerForm); // This has to be after the other '.parentNode's or they'll be null
    };
    return innerForm;
 };
 
-function newInterpretationConfirmation(numToGoUpTo, ballotType, interpretationJSON) {
+function newInterpretationConfirmation(numToGoUpTo, ballotType, interpretationJSON, optionalListOfContests) {
    var dat = interpretationJSON;
    var confirmationDiv = newElem('div');
    var confirmButton = newElem('button');
@@ -832,7 +844,7 @@ function newInterpretationConfirmation(numToGoUpTo, ballotType, interpretationJS
          //   on each interpretation, since we're running for a fixed number of
          //   ballots. In most audits, though, you'd want to check for that
          //   here:
-         makeNewBallotsUpToNumber(numToGoUpTo, ballotType)(); // TODO: don't do this if you're clicking to save a second time and we already have an unfinished one
+         makeNewBallotsUpToNumber(numToGoUpTo, ballotType, optionalListOfContests)(); // TODO: don't do this if you're clicking to save a second time and we already have an unfinished one
          // window.event.stopPropagation();
          event.stopPropagation(); // Maybe unnecessary
       }).fail(reportError);
@@ -841,11 +853,11 @@ function newInterpretationConfirmation(numToGoUpTo, ballotType, interpretationJS
    //   That's intentional, although it could change based on the spec:
    rejectButton.onclick = function() {
       timestampEvent({'event': 'click_reject', 'ballot_id': ballot_id});
-      confirmationDiv.parentNode.appendChild(newInnerForm(numToGoUpTo, ballotType, ballot_id));
+      confirmationDiv.parentNode.appendChild(newInnerForm(numToGoUpTo, ballotType, ballot_id, optionalListOfContests));
       confirmationDiv.parentNode.removeChild(confirmationDiv);
    };
 
-   confirmationDiv.appendChild(candidateSelectionList(ballotType, interpretationJSON));
+   confirmationDiv.appendChild(candidateSelectionList(ballotType, interpretationJSON, optionalListOfContests));
    confirmationDiv.appendChild(rejectButton);
    confirmationDiv.appendChild(confirmButton);
    return confirmationDiv;
@@ -859,7 +871,9 @@ function candidateSelectionList(ballotType, interpretationJSON) {
    }
 */
    conductorState['all_contests'][ballotType].forEach(function(contest) {
-      resultList.push(contest.title + ': ' + prettifyChoice(interpretationJSON['contests'][contest.id]));
+      if (typeof(interpretationJSON['contests'][contest.id]) != 'undefined') {
+         resultList.push(contest.title + ': ' + prettifyChoice(interpretationJSON['contests'][contest.id]));
+      }
    });
    return buildOrderedList(resultList);
 };
