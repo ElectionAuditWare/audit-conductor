@@ -56,6 +56,18 @@ function newElem(elemType) {
 function getById(nodeId) {
    return document.getElementById(nodeId);
 };
+// IE doesn't support '.remove()':
+function removeElem(node) {
+   node.parentNode.removeChild(node);
+
+   /* Though note, for production use:
+
+   "
+   if you have any event handlers wired up to the node you are removing, you will want to make sure you disconnect those before the last reference to the node being removed goes out of scope, lest poor implementations of the JavaScript interpreter leak memory.
+   "
+
+   */
+};
 
 window.onload = function() {
    auditNameContainer = getById('auditNameContainer');
@@ -256,7 +268,8 @@ function createButton(buttonMessage) {
       container.appendChild(button);
       button.onclick = function() {
          // container.parentNode.removeChild(container);
-         container.remove();
+         // container.remove();
+         removeElem(container);
          mainLoop();
       };
       document.body.appendChild(container);
@@ -807,7 +820,8 @@ function newInnerForm(numToGoUpTo, ballotType, ballot_id, optionalListOfContests
          dat['contests'][contest.id] = x;
       });
       innerForm.parentNode.appendChild(newInterpretationConfirmation(numToGoUpTo, ballotType, dat, optionalListOfContests));
-      innerForm.parentNode.removeChild(innerForm); // This has to be after the other '.parentNode's or they'll be null
+      // innerForm.parentNode.removeChild(innerForm); // This has to be after the other '.parentNode's or they'll be null
+      removeElem(innerForm);
    };
    return innerForm;
 };
@@ -857,7 +871,8 @@ function newInterpretationConfirmation(numToGoUpTo, ballotType, interpretationJS
    rejectButton.onclick = function() {
       timestampEvent({'event': 'click_reject', 'ballot_id': ballot_id});
       confirmationDiv.parentNode.appendChild(newInnerForm(numToGoUpTo, ballotType, ballot_id, optionalListOfContests));
-      confirmationDiv.parentNode.removeChild(confirmationDiv);
+      // confirmationDiv.parentNode.removeChild(confirmationDiv);
+      removeElem(confirmationDiv);
    };
 
    confirmationDiv.appendChild(candidateSelectionList(ballotType, interpretationJSON, optionalListOfContests));
