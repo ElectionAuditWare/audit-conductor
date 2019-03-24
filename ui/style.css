@@ -49,8 +49,11 @@ body {
 }
 
 /* todo: some common class betw this and 'ballot': */
-#seedContainer, #contestNameContainer, #contestTypeContainer, #finalResultContainer, #csvUploadContainer {
-}
+#seedContainer, 
+#contestNameContainer, 
+#contestTypeContainer, 
+#finalResultContainer, 
+#csvUploadContainer {}
 
 .container {
    width: 80%;
