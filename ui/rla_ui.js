@@ -983,7 +983,7 @@ function reportError(e) {
   // Variable containing error message
   var ajaxfailure = 'AJAX failure!: ' + JSON.stringify(e);
   // We get the ID of where the error message will go
-  var message = getById('Message');
+  var message = getById('errorMessage');
   // Pass the ajaxfailure message to the error box by ID
   $(message).text(ajaxfailure);
   // Get the close button option by ID
