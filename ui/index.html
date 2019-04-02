@@ -2,7 +2,6 @@
 <html>
    <head>
       <script src="jquery.js"></script>
-      <script src="bootstrap.js"></script>
       <script src="rla_ui.js"></script>
       <link rel="stylesheet" href="style.css">
    </head>
@@ -12,7 +11,7 @@
       </div>
       <div id="auditNameContainer" class="container" style="display:none">
          Enter a name for this audit:<br />
-         <input type="text" id="auditNameBox" maxLength="35" onkeypress="limitKeypress(event,this.value,maxLength)" />
+         <input type="text" id="auditNameBox" />
          <button id="auditNameSaveButton">Save</button>
       </div>
       <div id="cvrFileUploadContainer" class="container" style="display:none">
@@ -35,18 +34,6 @@
       <div id="listOfBallotsToPull" class="container" style="display:none">
       </div>
       <div id="ballotEntriesContainer" class="outerContainer"></div>
-      <!-- Error box div to display reportError function when an error occurs -->
-      <div id="errorBox" class="modal" data-backdrop="static" data-keyboard="false">
-         <div class="modal-content">
-            <div class="modal-header">
-               <span class="close" id="modalclose">x</span>
-               <h4> Error Message</h4>
-            </div>
-            <div class="modal-body">
-               <h5 id="errorMessage"></h5>
-            </div>
-         </div>
-      </div>
    </body>
 </html>
 

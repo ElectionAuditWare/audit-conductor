@@ -345,10 +345,6 @@ function enterAuditName() {
    var nameBox = getById('auditNameBox'); // 'Box' might sound like it's a div -- rename?
    auditNameContainer.style.display = 'block';
    nameBox.focus();
-   // Binds 'keypress' with restricInput function
-   var regNameObj = {'regex': /[a-zA-Z\-\_\d\.]+/};
-   $(nameBox).bind('keypress', regNameObj, restrictInput);
-   
    saveButton.onclick = function() {
       if(nameBox.value != '') {
          $.ajax({
@@ -579,9 +575,6 @@ function enterSeed() {
    seedTextBox = getById('seedTextBox');
 
    seedTextBox.focus();
-   // Binds 'keypress' with the restrictInput function
-   var regSeedObj = {'regex': /\d/};
-   $(seedTextBox).bind('keypress', regSeedObj, restrictInput);
 
    saveButton.onclick = function() {
       var seed;
@@ -976,42 +969,7 @@ function contestCheckboxName(ballot_id, contest_id) {
 
 // TODO: big red error box here:
 function reportError(e) {
-  // get error box div ID
-  var errorId = getById('errorBox');
-  // Make div visible
-  $(errorId).modal('show');
-  // Variable containing error message
-  var ajaxfailure = 'AJAX failure!: ' + JSON.stringify(e);
-  // We get the ID of where the error message will go
-  var message = getById('errorMessage');
-  // Pass the ajaxfailure message to the error box by ID
-  $(message).text(ajaxfailure);
-  // Get the close button option by ID
-  var modalclose = getById('modalclose');
-  // When the 'modalclose' is clicked in this case the 'x', the error div is hidden
-  $(modalclose).click(function() {    // The onclick doesnt seem to work with modal
-     $(errorId).modal('hide');
-  });
-}
-   
-// Function to limit character length for the input field
-function limitKeypress(event,value,maxLength){
-   // Checks to see if the value is undefined or if the length is larger than maxLength
-   // If it's larger or undefined than it prevents more 'key pressess'
-   if (value != undefined && value.toString().length >= maxLength) {
-      event.preventDefault();
-   }
+   alert('AJAX failure!: '+JSON.stringify(e));
 }
 
-// Takes event and parse event data using RegExp and returns boolean
-function restrictInput(event) {
-   // Gets additional data object such as {'regex': /regular expression/}
-   var regexData = event.data;
-   // Gets input value from event
-   var value = String.fromCharCode(event.which);
-   // Parse input and return value using addition data property {'regex': /regular expression/}
-   var pattern = new RegExp(regexData.regex);
-   return pattern.test(value);
-}
-   
 })();
