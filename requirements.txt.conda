@@ -42,7 +42,7 @@ ipywidgets=7.4.2=py37_0
 itsdangerous=1.1.0=py37_0
 jaraco.functools=1.20=py37_0
 jedi=0.13.1=py37_0
-jinja2=2.10=py37_0
+jinja2=2.10.1=py37_0
 jpeg=9b=h024ee3a_2
 jsonschema=2.6.0=py37_0
 jupyter=1.0.0=py37_7
